@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#04040e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Midnight Eclipse — CLAWS 2025</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <div class="stars" id="stars"></div>
+
+    <!-- Join Screen -->
+    <div class="screen" id="screen-join">
+      <div class="join-container">
+        <!-- Default state: manual entry -->
+        <div id="join-default">
+          <div class="join-logo">MIDNIGHT ECLIPSE</div>
+          <h1 class="join-heading">Welcome to<br><span class="glow-text">the Eclipse</span></h1>
+          <form id="join-form">
+            <input type="text" id="name-input" class="name-input" placeholder="Your name"
+              autocomplete="off" autocapitalize="words" spellcheck="false" required>
+            <input type="hidden" id="card-id-input">
+            <button type="submit" class="btn btn--primary">Enter →</button>
+          </form>
+        </div>
+        <!-- Card detected state: show card info + confirm -->
+        <div id="join-card-reveal" hidden>
+          <div class="card-reveal-constellation" id="reveal-constellation"></div>
+          <div class="card-reveal-symbol" id="reveal-symbol"></div>
+          <div class="card-reveal-name" id="reveal-name"></div>
+          <div class="card-reveal-title" id="reveal-title"></div>
+          <div class="card-reveal-attrs">
+            <div class="card-reveal-attr"><span>BEARING</span><strong id="reveal-direction"></strong></div>
+            <div class="card-reveal-attr"><span>NODE</span><strong id="reveal-number"></strong></div>
+          </div>
+          <div class="card-reveal-polaris" id="reveal-polaris" hidden>◉ POLARIS NODE</div>
+          <button class="btn btn--primary" id="reveal-confirm-btn">Enter as <span id="reveal-confirm-name"></span> →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NFC Interaction Scan Screen (shown when already logged in + scanning another card) -->
+    <div class="screen" id="screen-scanning" hidden>
+      <div class="scanning-container">
+        <div class="scanning-pulse"></div>
+        <div class="scanning-label">SCANNING NODE</div>
+        <div class="scanning-name" id="scanning-name"></div>
+        <div class="scanning-constellation" id="scanning-constellation"></div>
+        <div class="scanning-sub">Registering interaction...</div>
+      </div>
+    </div>
+
+    <!-- Main Screen -->
+    <div class="screen" id="screen-main" hidden>
+      <div class="guest-header">
+        <div class="guest-name-display" id="guest-name-display"></div>
+        <div class="badge" id="phase-badge" data-phase="LOBBY">LOBBY</div>
+      </div>
+
+      <!-- Card Identity Panel -->
+      <div class="card-identity" id="card-identity" hidden>
+        <div class="card-constellation" id="card-constellation-name"></div>
+        <div class="card-title-text" id="card-title-text"></div>
+        <div class="card-attrs">
+          <div class="card-attr">
+            <span class="card-attr-label">SYMBOL</span>
+            <span class="card-attr-value" id="card-symbol"></span>
+          </div>
+          <div class="card-attr">
+            <span class="card-attr-label">BEARING</span>
+            <span class="card-attr-value" id="card-direction"></span>
+          </div>
+          <div class="card-attr">
+            <span class="card-attr-label">NODE</span>
+            <span class="card-attr-value" id="card-number"></span>
+          </div>
+        </div>
+        <div class="card-polaris-badge" id="card-polaris-badge" hidden>◉ POLARIS NODE</div>
+      </div>
+
+      <!-- Rules Panel (collapsible) -->
+      <div class="rules-panel" id="rules-panel" hidden>
+        <button class="rules-toggle" id="rules-toggle" aria-expanded="false">
+          YOUR INTERACTION RULES <span class="rules-arrow">▾</span>
+        </button>
+        <div class="rules-body" id="rules-body" hidden></div>
+      </div>
+
+      <div class="guest-content">
+        <div class="phase-content" id="phase-content"></div>
+      </div>
+      <div class="broadcast-banner" id="broadcast-banner" hidden></div>
+      <div class="connection-status" id="connection-status">Reconnecting...</div>
+    </div>
+
+    <!-- Voting Overlay -->
+    <div class="overlay" id="overlay-voting" hidden>
+      <div class="voting-container">
+        <div class="voting-label">VOTING ACTIVE</div>
+        <div class="voting-team" id="voting-team"></div>
+        <div class="voting-title" id="voting-title"></div>
+        <div class="voting-description" id="voting-description"></div>
+        <div class="voting-timer">
+          <div class="timer-bar-wrap">
+            <div class="timer-bar" id="timer-bar"></div>
+          </div>
+          <div class="timer-text" id="timer-text"></div>
+        </div>
+        <div class="voting-options" id="voting-options"></div>
+        <div class="voting-footer">Tap to cast your vote</div>
+      </div>
+    </div>
+
+    <!-- Pending Overlay -->
+    <div class="overlay" id="overlay-pending" hidden>
+      <div class="pending-container">
+        <div class="pending-check">✓</div>
+        <div class="pending-title">VOTE RECEIVED</div>
+        <div class="pending-sub">Awaiting result...</div>
+        <div class="pending-pulse"></div>
+      </div>
+    </div>
+
+    <!-- Result Overlay -->
+    <div class="overlay" id="overlay-result" hidden>
+      <div class="result-container" id="result-container"></div>
+    </div>
+
+    <!-- Clue Unlock Notification -->
+    <div class="clue-notification" id="clue-notification" hidden>
+      <div class="clue-notification-label">CLUE UNLOCKED</div>
+      <div class="clue-notification-text" id="clue-notification-text"></div>
+    </div>
+
+    <!-- Interaction Result Overlay -->
+    <div class="overlay" id="overlay-interaction" hidden>
+      <div class="interaction-container" id="interaction-container"></div>
+    </div>
+
+    <!-- Terminal Overlay (Afterparty) -->
+    <div class="overlay" id="overlay-terminal" hidden>
+      <div class="terminal-container">
+        <div class="terminal-header">
+          <div class="terminal-label">// MIDNIGHT ECLIPSE TERMINAL</div>
+          <div class="terminal-sub">Enter constellation → bearing alignments</div>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+          <div class="terminal-lines" id="terminal-lines"></div>
+          <div class="terminal-input-row">
+            <span class="terminal-prompt">▶</span>
+            <input type="text" id="terminal-input" class="terminal-input-field" placeholder="IRIS:N VEGA:E ATLAS:W ..." autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <button class="terminal-submit-btn" id="terminal-submit">SUBMIT</button>
+          </div>
+        </div>
+        <div class="terminal-solved-screen" id="terminal-solved-screen" hidden>
+          <div class="terminal-solved-title">POLARIS ACQUIRED</div>
+          <div class="terminal-solved-sub">ALL CONSTELLATIONS ALIGNED</div>
+          <div class="terminal-solved-msg">MIDNIGHT ECLIPSE COMPLETE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="js/guest.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "IRIS":       { "name": "IRIS",       "color": "#6c8ef5", "symbol": "◈", "description": "Interface & Vision" },
+  "NOVA":       { "name": "NOVA",       "color": "#f5a26c", "symbol": "✦", "description": "Emerging Brilliance" },
+  "VEGA":       { "name": "VEGA",       "color": "#6cf5c8", "symbol": "◉", "description": "Signal & Sound" },
+  "CORVUS":     { "name": "CORVUS",     "color": "#f56c6c", "symbol": "⬡", "description": "Structural Depth" },
+  "HOSHI":      { "name": "HOSHI",      "color": "#c86cf5", "symbol": "✧", "description": "Research & Discovery" },
+  "AURA":       { "name": "AURA",       "color": "#6cf576", "symbol": "◎", "description": "Growth & Outreach" },
+  "PROMETHEUS": { "name": "PROMETHEUS", "color": "#f5e26c", "symbol": "△", "description": "Systems & Scale" },
+  "ATLAS":      { "name": "ATLAS",      "color": "#6cc8f5", "symbol": "□", "description": "Infrastructure & Foundation" }
+}

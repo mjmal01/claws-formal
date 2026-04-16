@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLAWS 2025 Formal — Display</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    html, body {
+      overflow: hidden;
+      cursor: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="display-app">
+    <canvas id="constellation-canvas"></canvas>
+
+    <div class="display-content" id="display-content">
+
+      <!-- State: LOBBY (default) -->
+      <div class="display-state" id="state-lobby">
+        <div class="display-club">MIDNIGHT ECLIPSE</div>
+        <div class="display-event">CLAWS 2025</div>
+        <div class="display-tagline">Awaiting initialization...</div>
+      </div>
+
+      <!-- State: PHASE -->
+      <div class="display-state" id="state-phase" hidden>
+        <div class="display-phase-label" id="display-phase-label"></div>
+      </div>
+
+      <!-- State: SPEECH -->
+      <div class="display-state" id="state-speech" hidden>
+        <div class="display-speech-label">NOW PRESENTING</div>
+        <div class="display-speech-team" id="display-speech-team"></div>
+        <div class="display-speech-role" id="display-speech-role"></div>
+      </div>
+
+      <!-- State: VOTING -->
+      <div class="display-state" id="state-voting" hidden>
+        <div class="display-voting-label">VOTING IN PROGRESS</div>
+        <div class="display-voting-title" id="display-voting-title"></div>
+        <div class="display-voting-team"  id="display-voting-team"></div>
+        <div class="display-timer" id="display-timer"></div>
+      </div>
+
+      <!-- State: WINNER -->
+      <div class="display-state" id="state-winner" hidden>
+        <div class="display-winner-stars">✦ ✦ ✦</div>
+        <div class="display-winner-label">SELECTED</div>
+        <div class="display-winner-name"  id="display-winner-name"></div>
+        <div class="display-winner-award" id="display-winner-award"></div>
+      </div>
+
+      <!-- State: TERMINAL COMPLETE -->
+      <div class="display-state" id="state-terminal" hidden>
+        <div class="display-terminal-complete">
+          <div class="display-polaris">POLARIS ACQUIRED</div>
+          <div class="display-aligned">ALL CONSTELLATIONS ALIGNED</div>
+          <div class="display-eclipse-complete">MIDNIGHT ECLIPSE<br>COMPLETE</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Broadcast overlay -->
+    <div class="display-broadcast-overlay" id="display-broadcast-overlay" hidden>
+      <div class="display-broadcast-content">
+        <div class="display-broadcast-label">ANNOUNCEMENT</div>
+        <div class="display-broadcast-message" id="display-broadcast-message"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="js/display.js"></script>
+</body>
+</html>

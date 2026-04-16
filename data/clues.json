@@ -1,0 +1,14 @@
+{
+  "dinner": [
+    { "id": "d1", "text": "What connects all things that orbit?", "level": "small" },
+    { "id": "d2", "text": "Numbers in sequence reveal direction.", "level": "mid" },
+    { "id": "d3", "text": "A full constellation aligned speaks loudest.", "level": "major" }
+  ],
+  "rare": [
+    { "id": "r1", "text": "Opposites held in balance unlock the gate.", "level": "rare" },
+    { "id": "r2", "text": "Two mirrors facing each other see infinity.", "level": "rare" }
+  ],
+  "terminal": [
+    { "id": "t1", "text": "The final key: map each star to its bearing.", "level": "terminal" }
+  ]
+}

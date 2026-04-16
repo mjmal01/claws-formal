@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLAWS Formal — Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Admin-only layout overrides */
+    html, body { overflow: hidden; }
+    .admin-app { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+
+    .admin-dashboard {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 16px;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .admin-col {
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .guest-panel {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .guest-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: none;
+    }
+
+    .vote-form input[type="text"],
+    .vote-form input[type="number"] {
+      width: 100%;
+    }
+
+    .admin-tab-content {
+      flex: 1;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-app">
+
+    <!-- Auth Screen -->
+    <div class="admin-auth-screen" id="admin-auth-screen">
+      <div class="auth-box">
+        <div class="auth-logo">CLAWS FORMAL</div>
+        <div class="auth-sub">Admin Access</div>
+        <form id="auth-form">
+          <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+          <button type="submit" class="btn btn--primary">Access Dashboard</button>
+        </form>
+        <div class="auth-error" id="auth-error" hidden>Incorrect password</div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="admin-dashboard" id="admin-dashboard" hidden>
+      <div class="admin-header">
+        <div class="admin-title">MIDNIGHT ECLIPSE — ADMIN</div>
+        <div class="admin-stats">
+          <span class="stat">ONLINE: <strong id="stat-guests">0</strong></span>
+          <span class="stat">PHASE: <strong id="stat-phase">LOBBY</strong></span>
+          <span class="stat">INTERACTIONS: <strong id="stat-interactions">0</strong></span>
+        </div>
+      </div>
+
+      <nav class="admin-tab-nav">
+        <button class="admin-tab-btn active" data-tab="control">⚙ Control</button>
+        <button class="admin-tab-btn" data-tab="cards">◈ Cards</button>
+        <button class="admin-tab-btn" data-tab="interactions">⚡ Interactions</button>
+        <button class="admin-tab-btn" data-tab="clues">✦ Clues</button>
+        <button class="admin-tab-btn" data-tab="story">◎ Story</button>
+      </nav>
+
+      <!-- TAB: CONTROL -->
+      <div class="admin-tab-content active" id="tab-control">
+        <div class="admin-grid">
+
+          <!-- Col 1: Phase + Speech + Broadcast + Terminal -->
+          <div class="admin-col">
+            <div class="admin-panel">
+              <div class="panel-title">Phase Control</div>
+              <div class="phase-buttons">
+                <button class="phase-btn" data-phase="LOBBY">LOBBY</button>
+                <button class="phase-btn" data-phase="DINNER">DINNER</button>
+                <button class="phase-btn" data-phase="SPEECHES">SPEECHES</button>
+                <button class="phase-btn" data-phase="MINGLING">MINGLING</button>
+                <button class="phase-btn" data-phase="AFTERPARTY">AFTERPARTY</button>
+              </div>
+            </div>
+
+            <div class="admin-panel">
+              <div class="panel-title">Speech Order</div>
+              <div class="speech-nav">
+                <button class="btn btn--ghost btn--sm" id="speech-prev">◀</button>
+                <div class="speech-current" id="speech-current">—</div>
+                <button class="btn btn--ghost btn--sm" id="speech-next">▶</button>
+              </div>
+              <div class="speech-index-display" id="speech-index-display">No speech selected</div>
+            </div>
+
+            <div class="admin-panel">
+              <div class="panel-title">Broadcast</div>
+              <div class="broadcast-form">
+                <input type="text" id="broadcast-input" placeholder="Message to all phones..." class="broadcast-input">
+                <div class="broadcast-types">
+                  <select id="broadcast-type">
+                    <option value="info">Info</option>
+                    <option value="alert">Alert</option>
+                    <option value="success">Success</option>
+                  </select>
+                  <button class="btn btn--primary btn--sm" id="broadcast-send">Send</button>
+                  <button class="btn btn--ghost btn--sm" id="broadcast-clear">Clear</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-panel">
+              <div class="panel-title">Terminal</div>
+              <div class="panel-subtitle" style="margin-bottom:8px;font-size:12px;color:var(--text-muted)">Format: IRIS:N VEGA:E (one per line or space-separated)</div>
+              <textarea id="terminal-solution-input" rows="3" placeholder="IRIS:N&#10;VEGA:E&#10;ATLAS:W" class="terminal-solution-textarea"></textarea>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <button class="btn btn--primary" id="set-terminal-solution-btn">Set Solution</button>
+                <button class="btn btn--danger" id="broadcast-terminal-solved-btn">Force Complete</button>
+              </div>
+              <div class="terminal-admin-status" id="terminal-admin-status"></div>
+            </div>
+          </div>
+
+          <!-- Col 2: Voting -->
+          <div class="admin-col">
+            <div class="admin-panel" id="panel-create-vote">
+              <div class="panel-title">Create Vote</div>
+              <div class="vote-form">
+                <input type="text" id="vote-title" placeholder="Award title (e.g. Interface Impact Award)">
+                <input type="text" id="vote-team" placeholder="Team (e.g. UX Design)">
+                <input type="text" id="vote-description" placeholder="Description (optional)">
+                <div class="vote-form-row">
+                  <label>Time limit (sec)</label>
+                  <input type="number" id="vote-timelimit" value="25" min="5" max="120">
+                </div>
+                <div class="panel-subtitle">Candidates</div>
+                <div id="vote-candidates"></div>
+                <button class="btn btn--ghost btn--sm" id="add-candidate">+ Add Candidate</button>
+                <button class="btn btn--primary vote-start-btn" id="start-vote-btn">▶ Start Vote</button>
+              </div>
+            </div>
+
+            <div class="admin-panel" id="panel-active-vote" hidden>
+              <div class="panel-title">
+                Active Vote
+                <span class="vote-status-badge" id="vote-status-badge">OPEN</span>
+              </div>
+              <div class="active-vote-info">
+                <div class="active-vote-title" id="active-vote-title"></div>
+                <div class="active-vote-team" id="active-vote-team"></div>
+              </div>
+              <div class="vote-progress">
+                <div class="vote-progress-text">
+                  <span id="vote-count">0</span> / <span id="guest-count">0</span> votes
+                </div>
+                <div class="vote-progress-bar">
+                  <div class="vote-progress-fill" id="vote-progress-fill"></div>
+                </div>
+              </div>
+              <div class="vote-live-results" id="vote-live-results"></div>
+              <div class="vote-actions">
+                <button class="btn btn--danger btn--sm" id="close-vote-btn">■ Close Voting</button>
+                <button class="btn btn--primary btn--sm" id="reveal-winner-btn" hidden>★ Reveal Winner</button>
+              </div>
+            </div>
+
+            <div class="admin-panel" id="panel-vote-history">
+              <div class="panel-title">Vote History</div>
+              <div id="vote-history-list">
+                <div class="empty-state">No completed votes</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Col 3: Connected Guests -->
+          <div class="admin-col">
+            <div class="admin-panel guest-panel">
+              <div class="panel-title">
+                Connected (<span id="guest-count-display">0</span>)
+              </div>
+              <div class="guest-list" id="guest-list">
+                <div class="empty-state">No guests connected</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Col 4: Pi LED Board -->
+          <div class="admin-col">
+            <div class="admin-panel">
+              <div class="panel-title">LED Constellation Board</div>
+              <div class="pi-status-row">
+                <span class="pi-status-dot offline" id="pi-status-dot"></span>
+                <span id="pi-status-label" style="font-size:12px;color:var(--text-muted)">Pi LED Board: OFFLINE</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;font-family:var(--font-mono)">
+                Run: sudo python3 pi/pi_client.py --server http://[IP]:3000
+              </div>
+              <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+                <button class="btn btn--ghost btn--sm" id="led-test-btn">&#9654; Test All</button>
+                <button class="btn btn--ghost btn--sm" id="led-off-btn">&#9632; All Off</button>
+              </div>
+              <div style="margin-bottom:16px">
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.1em">BRIGHTNESS</label>
+                <input type="range" id="led-brightness" min="0" max="255" value="100" style="width:100%;margin-top:6px;accent-color:var(--accent)">
+              </div>
+              <div class="panel-subtitle" style="margin-bottom:8px">Constellations</div>
+              <div class="led-constellation-grid" id="led-constellation-grid">
+                <!-- Dynamically populated from constellations data -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB: CARDS -->
+      <div class="admin-tab-content" id="tab-cards" hidden>
+        <div class="admin-panel" style="margin:16px">
+          <div class="panel-title">All Cards — Registry</div>
+          <div class="card-registry-filters">
+            <input type="text" id="registry-search" placeholder="Search name or constellation..." class="broadcast-input" style="max-width:300px">
+            <span class="registry-legend"><span class="dot dot-online"></span> Online &nbsp; <span class="dot dot-offline"></span> Offline</span>
+          </div>
+          <div class="card-registry-grid" id="card-registry-grid"></div>
+        </div>
+      </div>
+
+      <!-- TAB: INTERACTIONS -->
+      <div class="admin-tab-content" id="tab-interactions" hidden>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px">
+          <div class="admin-panel">
+            <div class="panel-title">Interaction Log <span id="interaction-count-badge" class="count-badge">0</span></div>
+            <div class="interactions-filters">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn" data-filter="rare">Rare</button>
+              <button class="filter-btn" data-filter="PAIR_INTERACTION">Pairs</button>
+              <button class="filter-btn" data-filter="GROUP_INTERACTION">Groups</button>
+            </div>
+            <div class="interaction-log" id="interaction-log"><div class="empty-state">No interactions yet</div></div>
+          </div>
+          <div class="admin-panel">
+            <div class="panel-title">Constellation Status</div>
+            <div class="constellation-status-grid" id="constellation-status-grid"></div>
+            <div class="panel-title" style="margin-top:16px">Admin: Evaluate Pair</div>
+            <div class="pair-eval-form">
+              <input type="text" id="pair-card-a" placeholder="Card ID A" class="broadcast-input">
+              <input type="text" id="pair-card-b" placeholder="Card ID B" class="broadcast-input" style="margin-top:6px">
+              <button class="btn btn--primary" id="pair-eval-btn" style="margin-top:8px">Evaluate Pair</button>
+              <div class="pair-eval-result" id="pair-eval-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CLUES -->
+      <div class="admin-tab-content" id="tab-clues" hidden>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px">
+          <div class="admin-panel">
+            <div class="panel-title clue-bucket-dinner">DINNER CLUES</div>
+            <div class="clue-list" id="clue-list-dinner"></div>
+          </div>
+          <div class="admin-panel">
+            <div class="panel-title clue-bucket-rare">RARE CLUES</div>
+            <div class="clue-list" id="clue-list-rare"></div>
+          </div>
+          <div class="admin-panel">
+            <div class="panel-title clue-bucket-terminal">TERMINAL CLUES</div>
+            <div class="clue-list" id="clue-list-terminal"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STORY -->
+      <div class="admin-tab-content" id="tab-story" hidden>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px">
+          <div class="admin-panel">
+            <div class="panel-title">Story Timeline</div>
+            <div class="story-timeline" id="story-timeline"><div class="empty-state">No events yet</div></div>
+          </div>
+          <div class="admin-panel">
+            <div class="panel-title">Award Winners</div>
+            <div id="awards-list"><div class="empty-state">No awards given yet</div></div>
+            <div class="panel-title" style="margin-top:16px">Phase Progress</div>
+            <div class="phase-progress-list" id="phase-progress-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
