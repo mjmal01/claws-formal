@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="page">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#04040e">
+  <title>Awards — Midnight Eclipse</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page">
+  <div class="stars" id="stars"></div>
+
+  <main class="page-container">
+    <header class="page-header">
+      <div class="page-eyebrow">Recognition</div>
+      <h1 class="page-title">Awards</h1>
+      <p class="page-subtitle">Six awards. Voted by you. Revealed live tonight.</p>
+    </header>
+
+    <div class="live-banner is-idle" id="live-banner">
+      <span class="live-dot"></span>
+      <span id="live-text">Voting will open when the awards round begins.</span>
+    </div>
+
+    <div id="live-voting-mount"></div>
+
+    <section class="section">
+      <div class="section-label">The Awards</div>
+
+      <div class="award-card">
+        <div class="award-icon">★</div>
+        <div>
+          <div class="award-name">MVP Award</div>
+          <div class="award-desc">For the member who had the biggest impact on CLAWS this year — the one whose work shows up everywhere.</div>
+        </div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">⚭</div>
+        <div>
+          <div class="award-name">Trust Award</div>
+          <div class="award-desc">The one you'd trust on an EVA spacewalk. Quiet reliability. Calm in chaos.</div>
+        </div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">⇌</div>
+        <div>
+          <div class="award-name">Gemini Award</div>
+          <div class="award-desc">For the person who kept the team moving forward — the engine behind the momentum.</div>
+        </div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">◉</div>
+        <div>
+          <div class="award-name">Polaris Award</div>
+          <div class="award-desc">The anchor. The one who shaped the team the most this year. The star we navigated by.</div>
+        </div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">↑</div>
+        <div>
+          <div class="award-name">Mentee Award</div>
+          <div class="award-desc">The most impactful mentee — the new member who rose fastest and gave the most back.</div>
+        </div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">↓</div>
+        <div>
+          <div class="award-name">Mentor Award</div>
+          <div class="award-desc">The most impactful mentor — the one who brought people up with them.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">How voting works</div>
+      <div class="section-body">
+        <p>When a voting round opens, this page will light up with the options. Tap one to cast your vote — you get one vote per round.</p>
+        <p>Winners are revealed live, and the winning card lights up on the map.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" id="bottom-nav"></nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+  (function () {
+    const cfg = window.MIDNIGHT_ECLIPSE_CONFIG || {};
+    const banner = document.getElementById('live-banner');
+    const txt = document.getElementById('live-text');
+    const mount = document.getElementById('live-voting-mount');
+
+    let socket;
+    try {
+      socket = io(cfg.BACKEND_URL || undefined, { transports: ['websocket', 'polling'] });
+    } catch (e) {
+      txt.textContent = 'Live voting unavailable — backend offline.';
+      return;
+    }
+
+    const cardId = (function () {
+      try { return localStorage.getItem('me_card_id'); } catch { return null; }
+    })();
+    const name = (function () {
+      try { return localStorage.getItem('me_name') || ''; } catch { return ''; }
+    })();
+
+    socket.on('connect', () => {
+      banner.classList.remove('is-idle');
+      txt.textContent = 'Connected. Awaiting the next round...';
+      if (cardId || name) socket.emit('guest_join', { cardId, name });
+    });
+    socket.on('disconnect', () => {
+      banner.classList.add('is-idle');
+      txt.textContent = 'Disconnected. Reconnecting...';
+    });
+
+    let currentRound = null;
+    let myVote = null;
+
+    function render(round) {
+      currentRound = round;
+      if (!round) {
+        mount.innerHTML = '';
+        txt.textContent = 'No voting round is currently open.';
+        banner.classList.add('is-idle');
+        return;
+      }
+      banner.classList.remove('is-idle');
+      txt.textContent = `LIVE · ${round.title}`;
+
+      const optsHtml = round.options.map(o => {
+        const chosen = myVote === o.id;
+        return `<button class="menu-item ${chosen ? 'is-chosen' : ''}" data-id="${o.id}"
+                        style="${chosen ? 'border-color:var(--accent);background:rgba(108,142,245,0.15)' : ''}">
+          <div>
+            <div class="menu-item-name">${o.name}</div>
+            ${o.cardId ? `<div class="menu-item-sub">${o.cardId}</div>` : ''}
+          </div>
+          <span class="menu-item-tag">${chosen ? 'VOTED' : 'TAP'}</span>
+        </button>`;
+      }).join('');
+
+      mount.innerHTML = `
+        <section class="section">
+          <div class="section-label">${round.team || 'Live Round'}</div>
+          <div class="section-title">${round.title}</div>
+          ${round.description ? `<div class="section-body" style="margin-bottom:14px">${round.description}</div>` : ''}
+          <div class="menu-list">${optsHtml}</div>
+        </section>`;
+
+      mount.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (myVote) return;
+          const id = btn.getAttribute('data-id');
+          socket.emit('submit_vote', { optionId: id });
+        });
+      });
+    }
+
+    socket.on('joined', (data) => {
+      if (data?.voting) {
+        myVote = data.voting.myVote || null;
+        render(data.voting);
+      }
+    });
+    socket.on('voting_opened', (round) => { myVote = null; render(round); });
+    socket.on('voting_closed', () => {
+      if (currentRound) {
+        txt.textContent = `Voting closed · ${currentRound.title}. Result incoming.`;
+      }
+    });
+    socket.on('vote_accepted', ({ optionId }) => {
+      myVote = optionId;
+      render(currentRound);
+    });
+    socket.on('award_result', (res) => {
+      mount.innerHTML = `
+        <section class="section" style="text-align:center">
+          <div class="section-label">${res.team || 'Result'}</div>
+          <div class="section-title" style="font-size:22px">${res.award}</div>
+          <div style="font-size:28px;font-weight:600;color:var(--gold);margin:14px 0">
+            ${res.winnerName}
+          </div>
+          <div class="section-body" style="font-size:12px;color:var(--text-muted)">${res.total} vote${res.total === 1 ? '' : 's'} cast</div>
+        </section>`;
+      banner.classList.add('is-idle');
+      txt.textContent = 'Round complete. Awaiting the next one...';
+      currentRound = null; myVote = null;
+    });
+  })();
+  </script>
+</body>
+</html>

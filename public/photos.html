@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" class="page">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#04040e">
+  <title>Photos — Midnight Eclipse</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page">
+  <div class="stars" id="stars"></div>
+
+  <main class="page-container">
+    <header class="page-header">
+      <div class="page-eyebrow">The Year, In Frames</div>
+      <h1 class="page-title">Photos</h1>
+      <p class="page-subtitle">Moments from the POLARIS team, research nights, CLAWSgiving, RASCAL, and everywhere in between.</p>
+    </header>
+
+    <section class="section">
+      <div class="section-label">Gallery</div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <div class="section-body" style="margin-top:14px;font-size:12px;color:var(--text-muted)">
+        Drop photos into <code>public/photos/</code> and list them in <code>data/photos.json</code> to populate this grid.
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" id="bottom-nav"></nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  (async function () {
+    const grid = document.getElementById('photo-grid');
+
+    // Try to load a photo manifest. If none exists, show placeholder tiles.
+    let photos = [];
+    try {
+      const r = await fetch('data/photos.json');
+      if (r.ok) photos = await r.json();
+    } catch (e) {}
+
+    if (!photos.length) {
+      photos = [
+        { caption: 'POLARIS ideation' },
+        { caption: 'CLAWSgiving' },
+        { caption: 'RASCAL planning' },
+        { caption: 'GEMINI demo' },
+        { caption: 'Metal Umbrella' },
+        { caption: 'Hardware BOY' },
+        { caption: 'Research user study' },
+        { caption: 'k12 STEM night' },
+        { caption: 'Recruitment' },
+        { caption: 'Retreat' },
+        { caption: 'Telemetry dashboard' },
+        { caption: 'Socials @ the Graduate' },
+      ];
+    }
+
+    photos.forEach(p => {
+      const tile = document.createElement('div');
+      tile.className = 'photo-tile';
+      if (p.src) {
+        tile.innerHTML = `<img src="${p.src}" alt="${p.caption || ''}" loading="lazy">` +
+          (p.caption ? `<div class="photo-caption">${p.caption}</div>` : '');
+      } else {
+        tile.classList.add('is-placeholder');
+        tile.setAttribute('data-caption', p.caption || '');
+      }
+      grid.appendChild(tile);
+    });
+  })();
+  </script>
+</body>
+</html>

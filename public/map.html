@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" class="page">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#04040e">
+  <title>Map — Midnight Eclipse</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page">
+  <div class="stars" id="stars"></div>
+
+  <main class="page-container">
+    <header class="page-header">
+      <div class="page-eyebrow">The Sky Tonight</div>
+      <h1 class="page-title">Constellation<br>Map</h1>
+      <p class="page-subtitle">Every node. Every bearing. The shape of CLAWS 2026.</p>
+    </header>
+
+    <div class="section">
+      <div class="section-label">Legend</div>
+      <div class="map-legend" id="legend"></div>
+      <div class="section-body" style="margin-top:10px">
+        <p style="font-size:12.5px;color:var(--text-muted)">◉ = Polaris anchor · outlined tile = you · N/E/S/W = bearing</p>
+      </div>
+    </div>
+
+    <div id="map-body"></div>
+  </main>
+
+  <nav class="bottom-nav" id="bottom-nav"></nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  (async function () {
+    try {
+      const [cards, consts] = await Promise.all([
+        fetch('data/cards.json').then(r => r.json()),
+        fetch('data/constellations.json').then(r => r.json()),
+      ]);
+
+      const myCardId = (() => {
+        try { return localStorage.getItem('me_card_id'); } catch { return null; }
+      })();
+
+      // Legend
+      const legend = document.getElementById('legend');
+      Object.values(consts).forEach(c => {
+        const chip = document.createElement('span');
+        chip.className = 'legend-chip';
+        chip.innerHTML = `<span class="legend-dot" style="background:${c.color}"></span>${c.name} · ${c.fullName}`;
+        legend.appendChild(chip);
+      });
+
+      // Group cards by constellation
+      const byConst = {};
+      cards.forEach(card => {
+        if (!byConst[card.constellation]) byConst[card.constellation] = [];
+        byConst[card.constellation].push(card);
+      });
+
+      // Order constellations alphabetically but with BU first, XX last
+      const keys = Object.keys(byConst).sort();
+      keys.sort((a, b) => {
+        if (a === 'BU') return -1; if (b === 'BU') return 1;
+        if (a === 'XX') return 1;  if (b === 'XX') return -1;
+        return a.localeCompare(b);
+      });
+
+      const body = document.getElementById('map-body');
+      keys.forEach(key => {
+        const meta = consts[key] || { name: key, fullName: key, color: '#6c8ef5' };
+        const list = byConst[key].slice().sort((a, b) => (a.number || 0) - (b.number || 0));
+
+        const block = document.createElement('div');
+        block.className = 'constellation-block section';
+        block.innerHTML = `
+          <div class="constellation-head">
+            <span class="c-name" style="color:${meta.color}">◉ ${meta.name} — ${meta.fullName}</span>
+            <span class="c-count">${list.length} NODE${list.length === 1 ? '' : 'S'}</span>
+          </div>
+          <div class="node-grid"></div>`;
+
+        const grid = block.querySelector('.node-grid');
+        list.forEach(card => {
+          const node = document.createElement('div');
+          node.className = 'node' +
+            (card.isPolaris ? ' is-polaris' : '') +
+            (card.id === myCardId ? ' is-me' : '');
+          node.style.setProperty('--c-color', meta.color);
+          node.style.setProperty('--c-border', 'rgba(108,142,245,0.25)');
+          const subLabel = card.symbol && card.symbol !== key ? card.symbol : (card.direction || '');
+          node.innerHTML = `
+            <div class="n-num">${String(card.number || '').padStart(2,'0')}</div>
+            <div class="n-name">${card.name}</div>
+            <div class="n-dir">${subLabel}</div>`;
+          grid.appendChild(node);
+        });
+
+        body.appendChild(block);
+      });
+    } catch (e) {
+      document.getElementById('map-body').innerHTML =
+        '<div class="section"><div class="section-body">Could not load map data. Check back in a moment.</div></div>';
+      console.error(e);
+    }
+  })();
+  </script>
+</body>
+</html>

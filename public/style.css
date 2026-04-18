@@ -2032,3 +2032,395 @@ input, select { font-family: var(--font-body); }
   padding: 8px 14px;
 }
 .dinner-hint-const { font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHARED LAYOUT — main / map / card / awards / story / photos pages
+   (mobile-first, bottom-nav driven)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html.page, body.page { overflow: auto; height: auto; min-height: 100%; }
+body.page { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+.page-container {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-top: env(safe-area-inset-top, 0);
+}
+.page-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+.page-title {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  background: linear-gradient(120deg, #fff 0%, var(--accent) 60%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.page-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.section-body { color: var(--text); font-size: 14.5px; line-height: 1.55; }
+.section-body p + p { margin-top: 10px; }
+
+/* ─── Bottom navigation ──────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  background: rgba(8, 8, 22, 0.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: color 0.15s;
+  border-radius: 8px;
+}
+.nav-item .nav-icon { font-size: 18px; line-height: 1; }
+.nav-item .nav-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; }
+.nav-item:hover { color: var(--text); }
+.nav-item.is-active { color: var(--accent); }
+.nav-item.is-active .nav-icon { text-shadow: 0 0 12px var(--accent); }
+
+/* ─── Program / timeline (main page) ─────────────────────────────────────── */
+.program {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.program-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.program-item:last-child { border-bottom: none; }
+.program-time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}
+.program-main { }
+.program-phase {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.program-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* ─── Constellation map grid ─────────────────────────────────────────────── */
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.constellation-block { margin-bottom: 16px; }
+.constellation-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.constellation-head .c-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.constellation-head .c-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+.node-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+.node {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--c-border, var(--border));
+  border-radius: var(--radius-sm);
+  padding: 10px 6px;
+  text-align: center;
+  overflow: hidden;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.node::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: radial-gradient(circle at top, var(--c-color, var(--accent)) 0%, transparent 60%);
+  opacity: 0.18;
+  pointer-events: none;
+}
+.node .n-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-color, var(--accent));
+  letter-spacing: 0.1em;
+}
+.node .n-name {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.2;
+}
+.node .n-dir {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+}
+.node.is-polaris .n-num::after { content: ' ◉'; color: var(--gold); }
+.node.is-polaris { border-color: rgba(255, 215, 0, 0.5); }
+.node.is-me {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* ─── Photo grid ─────────────────────────────────────────────────────────── */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+@media (min-width: 500px) { .photo-grid { grid-template-columns: repeat(3, 1fr); } }
+.photo-tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.photo-tile img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-tile.is-placeholder::after {
+  content: attr(data-caption);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-align: center;
+  padding: 10px;
+}
+.photo-caption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 6px 8px;
+  font-size: 10px;
+  color: var(--text);
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+}
+
+/* ─── Awards list ────────────────────────────────────────────────────────── */
+.award-card {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+}
+.award-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #fff;
+}
+.award-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.award-desc { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+
+.live-banner {
+  background: linear-gradient(120deg, rgba(108, 142, 245, 0.18), rgba(155, 108, 247, 0.18));
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.live-banner .live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  margin-right: 8px;
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+.live-banner.is-idle .live-dot { background: var(--text-muted); animation: none; }
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(1.3); }
+}
+
+/* ─── Story timeline ─────────────────────────────────────────────────────── */
+.story-entry {
+  position: relative;
+  padding: 16px 16px 16px 36px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+.story-entry::before {
+  content: '';
+  position: absolute;
+  left: 14px; top: 22px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.story-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.story-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.story-body { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+/* ─── Dinner menu (card page enhancement) ───────────────────────────────── */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.menu-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.menu-item-name { font-weight: 500; font-size: 14px; }
+.menu-item-sub  { font-size: 12px; color: var(--text-muted); }
+.menu-item-tag  {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+/* ─── Small responsive tweaks ───────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .page-title { font-size: 26px; }
+  .nav-item .nav-label { font-size: 8px; }
+}
+
+/* card.html specific: make room for bottom nav on the live guest screens */
+#screen-main .guest-content { padding-bottom: 96px; }
+#screen-join .join-container { padding-bottom: 96px; }

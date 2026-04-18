@@ -1,0 +1,6 @@
+node_modules
+pi
+server.js
+generate-nfc-sheet.js
+nfc-urls.html
+railway.toml
