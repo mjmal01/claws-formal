@@ -1,9 +1,6 @@
 // Shared bottom-nav + starfield + NFC card capture for all pages.
 (function () {
   // ── NFC card capture ──────────────────────────────────────────────────────
-  // If the URL has ?card=... decide what to do:
-  //   • First tap (no identity stored yet)  → store as identity, go to node page
-  //   • Second tap (identity already known) → open comparison view
   const url = new URL(window.location.href);
   const paramCard = url.searchParams.get('card');
   if (paramCard) {
@@ -13,22 +10,18 @@
     const onNodePage = window.location.pathname.includes('node.html');
 
     if (!existingId) {
-      // First tap — store identity and redirect to node page
       try { localStorage.setItem('me_card_id', paramCard); } catch (e) {}
       if (!onNodePage) {
         window.location.replace('node.html?id=' + paramCard);
       }
     } else if (existingId === paramCard) {
-      // Tapped own card — just go to your node page
       if (!onNodePage) {
         window.location.replace('node.html?id=' + paramCard);
       }
     } else {
-      // Second tap — comparison mode
       if (!onNodePage) {
         window.location.replace('node.html?id=' + existingId + '&scan=' + paramCard);
       }
-      // If already on node.html, node.html's own script handles the scan param
     }
   }
 
@@ -74,8 +67,89 @@
     mount.innerHTML = html;
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  // ── Award sync socket ────────────────────────────────────────────────────
+  // Anonymous observer socket — does NOT call guest_join, so guest counts
+  // are never inflated. The server uses io.emit() for all award/voting
+  // broadcasts, which reaches every connected socket including this one.
+  // This keeps sessionStorage current on every page the guest visits so
+  // awards.html always shows the correct state the moment it loads.
+  function loadA(key, fb) {
+    try { return JSON.parse(sessionStorage.getItem(key) || 'null') || fb; } catch { return fb; }
+  }
+  function saveA(key, val) {
+    try { sessionStorage.setItem(key, JSON.stringify(val)); } catch {}
+  }
+  function notifyAwardsPage() {
+    window.dispatchEvent(new CustomEvent('awardsUpdated'));
+  }
+
+  function setupAwardSync() {
+    const cfg = window.MIDNIGHT_ECLIPSE_CONFIG || {};
+    let socket;
+    try {
+      socket = io(cfg.BACKEND_URL || undefined, { transports: ['websocket', 'polling'] });
+    } catch (e) { return; }
+
+    socket.on('preset_award_result', function (res) {
+      var list = loadA('claws_preset_awards', []);
+      list = list.filter(function (a) { return a.awardKey !== res.awardKey; });
+      list.push(res);
+      saveA('claws_preset_awards', list);
+      notifyAwardsPage();
+    });
+
+    socket.on('preset_award_unreveal', function (data) {
+      var list = loadA('claws_preset_awards', []);
+      list = list.filter(function (a) { return a.awardKey !== data.awardKey; });
+      saveA('claws_preset_awards', list);
+      notifyAwardsPage();
+    });
+
+    socket.on('award_result', function (res) {
+      if (!res.broadcastedAt) return; // admin-only tally, not visible to guests yet
+      var list = loadA('claws_superlative_awards', []);
+      list = list.filter(function (a) { return a.id !== res.id; });
+      list.push(res);
+      saveA('claws_superlative_awards', list);
+      notifyAwardsPage();
+    });
+
+    socket.on('award_unreveal', function (data) {
+      var list = loadA('claws_superlative_awards', []);
+      list = list.filter(function (a) { return a.id !== data.voteId; });
+      saveA('claws_superlative_awards', list);
+      notifyAwardsPage();
+    });
+
+    socket.on('voting_opened', function (round) {
+      var rounds = loadA('claws_active_rounds', {});
+      rounds[round.id] = round;
+      saveA('claws_active_rounds', rounds);
+      notifyAwardsPage();
+    });
+
+    socket.on('voting_closed', function (data) {
+      var rounds = loadA('claws_active_rounds', {});
+      var id = data && data.voteId;
+      if (id && rounds[id]) rounds[id].status = 'closed';
+      saveA('claws_active_rounds', rounds);
+      notifyAwardsPage();
+    });
+  }
+
+  function initSocketIO(callback) {
+    if (typeof io !== 'undefined') { callback(); return; }
+    // Dynamically load socket.io on pages that don't already include it
+    var s = document.createElement('script');
+    s.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
+    s.onload = callback;
+    s.onerror = function () {};
+    document.head.appendChild(s);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
     buildStars();
     buildNav();
+    initSocketIO(setupAwardSync);
   });
 })();

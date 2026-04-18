@@ -129,11 +129,16 @@
       return;
     }
 
+    // Identity — check both storage keys (guest.js uses claws_identity,
+    // nav.js NFC flow uses me_card_id)
     const identity = (function () {
       try { return JSON.parse(localStorage.getItem('claws_identity') || 'null'); } catch { return null; }
     })();
-    const cardId = identity?.cardId || null;
-    const name   = identity?.name   || '';
+    let cardId = identity?.cardId || null;
+    const name = identity?.name || '';
+    if (!cardId) {
+      try { cardId = localStorage.getItem('me_card_id'); } catch {}
+    }
 
     socket.on('connect', () => {
       banner.classList.remove('is-idle');
@@ -301,9 +306,18 @@
 
     renderAll();
 
-    // Re-render from sessionStorage whenever the user comes back to this page
-    // (covers the case where another page updated sessionStorage while this was hidden)
-    document.addEventListener('visibilitychange', () => {
+    // nav.js dispatches this event whenever it receives an award/voting update,
+    // triggering an immediate re-render even when we're already on this page.
+    window.addEventListener('awardsUpdated', function () {
+      presetAwards      = loadFromSession('claws_preset_awards',      []);
+      superlativeAwards = loadFromSession('claws_superlative_awards', []);
+      activeRounds      = loadFromSession('claws_active_rounds',      {});
+      myVotes           = loadFromSession('claws_my_votes',           {});
+      renderAll();
+    });
+
+    // Also re-sync when the user switches browser tabs back to this page
+    document.addEventListener('visibilitychange', function () {
       if (document.hidden) return;
       presetAwards      = loadFromSession('claws_preset_awards',      []);
       superlativeAwards = loadFromSession('claws_superlative_awards', []);
