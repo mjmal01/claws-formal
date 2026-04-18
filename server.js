@@ -63,8 +63,9 @@ const speechOrder = [
 let state = {
   phase: 'LOBBY',
   speechIndex: -1,
-  currentVoting: null,
+  activeVotings: {},   // voteId → round object (supports multiple simultaneous votes)
   votingHistory: [],
+  presetAwards: {},    // awardKey → result object (tracks what's been revealed)
   broadcast: null,
   terminalSolved: false,
   terminalSolution: null,
@@ -97,64 +98,58 @@ function getCurrentSpeech() {
 function buildGuestState(socketId) {
   const guest = guests.get(socketId);
   const card = guest?.cardId ? cardDb.find(c => c.id === guest.cardId) : null;
-  let votingData = null;
 
-  if (state.currentVoting) {
+  const activeVotings = Object.values(state.activeVotings).map(round => {
     const now = Date.now();
-    const elapsed = state.currentVoting.startedAt
-      ? Math.floor((now - state.currentVoting.startedAt) / 1000)
-      : 0;
-    const myVote = guest ? state.currentVoting.votes[socketId] || null : null;
-    votingData = {
-      id: state.currentVoting.id,
-      title: state.currentVoting.title,
-      team: state.currentVoting.team,
-      description: state.currentVoting.description,
-      options: state.currentVoting.options,
-      timeLimit: state.currentVoting.timeLimit,
-      status: state.currentVoting.status,
+    const elapsed = round.startedAt ? Math.floor((now - round.startedAt) / 1000) : 0;
+    return {
+      id: round.id,
+      title: round.title,
+      team: round.team,
+      description: round.description,
+      options: round.options,
+      timeLimit: round.timeLimit,
+      status: round.status,
       elapsed,
-      myVote,
+      myVote: round.votes[socketId] || null,
     };
-  }
+  });
 
   return {
     phase: state.phase,
     speechIndex: state.speechIndex,
     currentSpeech: getCurrentSpeech(),
     broadcast: state.broadcast,
-    voting: votingData,
+    voting: activeVotings[0] || null,   // backwards compat for guest.js overlay
+    activeVotings,
+    presetAwards: Object.values(state.presetAwards),
+    revealedSuperlatives: state.votingHistory
+      .filter(v => v.result && v.result.broadcastedAt)
+      .map(v => v.result),
     card: card || null,
     constellations: constellationDb,
   };
 }
 
-function computeVoteCounts() {
-  if (!state.currentVoting) return { counts: {}, total: 0 };
+function computeVoteCounts(round) {
+  if (!round) return { counts: {}, total: 0 };
   const counts = {};
-  for (const opt of state.currentVoting.options) {
-    counts[opt.id] = 0;
-  }
-  for (const optId of Object.values(state.currentVoting.votes)) {
+  for (const opt of round.options) counts[opt.id] = 0;
+  for (const optId of Object.values(round.votes)) {
     if (counts[optId] !== undefined) counts[optId]++;
   }
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   return { counts, total };
 }
 
-function computeWinner() {
-  const { counts } = computeVoteCounts();
-  let winnerId = null;
-  let winnerCount = -1;
+function computeWinner(round) {
+  const { counts } = computeVoteCounts(round);
+  let winnerId = null, winnerCount = -1;
   for (const [id, count] of Object.entries(counts)) {
-    if (count > winnerCount) {
-      winnerCount = count;
-      winnerId = id;
-    }
+    if (count > winnerCount) { winnerCount = count; winnerId = id; }
   }
   if (!winnerId) return null;
-  const winnerOption = state.currentVoting.options.find(o => o.id === winnerId);
-  return winnerOption || null;
+  return round.options.find(o => o.id === winnerId) || null;
 }
 
 function emitGuestsUpdated() {
@@ -187,12 +182,10 @@ function emitLed(event, data) {
 }
 
 function buildPiState() {
-  // Tell Pi which cards are currently online and their LED states
   const onlineCardIds = new Set();
   for (const guest of guests.values()) {
     if (guest.cardId) onlineCardIds.add(guest.cardId);
   }
-
   const ledStates = {};
   for (const [cardId, ledInfo] of Object.entries(ledMapDb.cards || {})) {
     ledStates[cardId] = {
@@ -210,7 +203,6 @@ io.on('connection', (socket) => {
 
   // Guest joins
   socket.on('guest_join', ({ name, cardId }) => {
-    // If cardId is provided but name is missing/blank, look up name from cardDb
     let resolvedName = name ? String(name).trim().slice(0, 60) : '';
     const cleanCard = cardId ? String(cardId).trim().slice(0, 64) : null;
 
@@ -218,7 +210,7 @@ io.on('connection', (socket) => {
       const cardData = cardDb.find(c => c.id === cleanCard);
       if (cardData) resolvedName = cardData.name;
     }
-    if (!resolvedName) return; // still no name, abort
+    if (!resolvedName) return;
 
     guests.set(socket.id, {
       name: resolvedName,
@@ -230,7 +222,6 @@ io.on('connection', (socket) => {
     socket.emit('joined', buildGuestState(socket.id));
     emitGuestsUpdated();
 
-    // Broadcast to ALL clients (including map) so nodes light up in real-time
     if (cleanCard) {
       const cardData = cardDb.find(c => c.id === cleanCard);
       if (cardData) {
@@ -247,7 +238,6 @@ io.on('connection', (socket) => {
       }
     }
 
-    // Emit LED event for this card coming online
     if (cleanCard && ledMapDb.cards?.[cleanCard]) {
       const ledInfo = ledMapDb.cards[cleanCard];
       const color = ledMapDb.constellationGroups?.[ledInfo.constellation]?.color || [255,255,255];
@@ -259,7 +249,6 @@ io.on('connection', (socket) => {
       });
     }
 
-    // Check constellation activation
     if (cleanCard) {
       checkConstellationActivation(cleanCard);
     }
@@ -269,7 +258,7 @@ io.on('connection', (socket) => {
   socket.on('register_interaction', ({ targetCardId }) => {
     const guest = guests.get(socket.id);
     if (!guest?.cardId) return;
-    if (guest.cardId === targetCardId) return; // can't interact with yourself
+    if (guest.cardId === targetCardId) return;
 
     const cardA = cardDb.find(c => c.id === guest.cardId);
     const cardB = cardDb.find(c => c.id === targetCardId);
@@ -291,11 +280,9 @@ io.on('connection', (socket) => {
     };
 
     state.interactionLog.push(interaction);
-
     socket.emit('interaction_result', { interaction, cardB });
     io.to('admin').emit('new_interaction', interaction);
 
-    // Story event if rare
     const hasRare = results.some(r => r.strength === 'rare');
     if (hasRare) {
       const storyEvent = {
@@ -308,7 +295,6 @@ io.on('connection', (socket) => {
       io.to('admin').emit('story_event', storyEvent);
     }
 
-    // Flash LEDs for interacting cards
     const ledA = ledMapDb.cards?.[cardA.id];
     const ledB = ledMapDb.cards?.[cardB.id];
     if (ledA && ledB) {
@@ -323,31 +309,27 @@ io.on('connection', (socket) => {
   });
 
   // Guest submits vote
-  socket.on('submit_vote', ({ optionId }) => {
-    if (!state.currentVoting || state.currentVoting.status !== 'open') return;
-    const validOption = state.currentVoting.options.find(o => o.id === optionId);
+  socket.on('submit_vote', ({ voteId, optionId }) => {
+    const round = voteId
+      ? state.activeVotings[voteId]
+      : Object.values(state.activeVotings).find(r => r.status === 'open');
+
+    if (!round || round.status !== 'open') return;
+    const validOption = round.options.find(o => o.id === optionId);
     if (!validOption) return;
 
-    // Idempotent — record first vote only
-    if (state.currentVoting.votes[socket.id]) {
-      socket.emit('vote_accepted', { optionId: state.currentVoting.votes[socket.id] });
+    if (round.votes[socket.id]) {
+      socket.emit('vote_accepted', { voteId: round.id, optionId: round.votes[socket.id] });
       return;
     }
 
-    state.currentVoting.votes[socket.id] = optionId;
-
+    round.votes[socket.id] = optionId;
     const guest = guests.get(socket.id);
     if (guest) guest.hasVoted = true;
 
-    socket.emit('vote_accepted', { optionId });
-
-    const { counts, total } = computeVoteCounts();
-    io.to('admin').emit('vote_update', {
-      counts,
-      total,
-      guestCount: guests.size,
-    });
-
+    socket.emit('vote_accepted', { voteId: round.id, optionId });
+    const { counts, total } = computeVoteCounts(round);
+    io.to('admin').emit('vote_update', { voteId: round.id, counts, total, guestCount: guests.size });
     emitGuestsUpdated();
   });
 
@@ -378,6 +360,7 @@ io.on('connection', (socket) => {
       clueStates: state.clueStates,
       storyEvents: state.storyEvents,
       phaseStartTimes: state.phaseStartTimes,
+      presetAwards: state.presetAwards,
       ledMap: ledMapDb,
     });
   });
@@ -388,12 +371,7 @@ io.on('connection', (socket) => {
     if (!valid.includes(phase)) return;
     state.phase = phase;
     state.phaseStartTimes[phase] = Date.now();
-    state.storyEvents.push({
-      type: 'PHASE_CHANGE',
-      description: `Phase changed to ${phase}`,
-      timestamp: Date.now(),
-      data: { phase },
-    });
+    state.storyEvents.push({ type: 'PHASE_CHANGE', description: `Phase changed to ${phase}`, timestamp: Date.now(), data: { phase } });
     io.emit('phase_changed', { phase });
     emitLed('led_phase_change', { phase });
   });
@@ -411,9 +389,6 @@ io.on('connection', (socket) => {
   socket.on('admin_start_voting', (roundData) => {
     if (!roundData || !roundData.title || !Array.isArray(roundData.options)) return;
     if (roundData.options.length < 2) return;
-
-    // Reset hasVoted for all guests
-    for (const g of guests.values()) g.hasVoted = false;
 
     const timeLimit = Math.max(5, Math.min(120, parseInt(roundData.timeLimit, 10) || 25));
 
@@ -433,58 +408,77 @@ io.on('connection', (socket) => {
       startedAt: Date.now(),
     };
 
-    state.currentVoting = round;
+    state.activeVotings[round.id] = round;
 
     const publicRound = {
-      id: round.id,
-      title: round.title,
-      team: round.team,
-      description: round.description,
-      options: round.options,
-      timeLimit: round.timeLimit,
-      status: round.status,
-      startedAt: round.startedAt,
-      elapsed: 0,
+      id: round.id, title: round.title, team: round.team,
+      description: round.description, options: round.options,
+      timeLimit: round.timeLimit, status: round.status,
+      startedAt: round.startedAt, elapsed: 0,
     };
 
     io.emit('voting_opened', publicRound);
 
-    // Auto-close timer
-    if (round._autoCloseTimer) clearTimeout(round._autoCloseTimer);
     round._autoCloseTimer = setTimeout(() => {
-      if (state.currentVoting && state.currentVoting.id === round.id && state.currentVoting.status === 'open') {
-        closeVoting();
-      }
+      if (state.activeVotings[round.id]?.status === 'open') closeVoting(round.id);
     }, timeLimit * 1000);
 
     emitGuestsUpdated();
   });
 
   // Admin: close voting
-  socket.on('admin_close_voting', () => {
-    closeVoting();
+  socket.on('admin_close_voting', ({ voteId }) => {
+    closeVoting(voteId);
   });
 
-  // Admin: reveal winner
-  socket.on('admin_reveal_winner', () => {
-    if (!state.currentVoting) return;
-    const winner = computeWinner();
-    const { counts, total } = computeVoteCounts();
+  // Admin: tally winner (admin only, not broadcast to guests yet)
+  socket.on('admin_reveal_winner', ({ voteId }) => {
+    const round = state.activeVotings[voteId];
+    if (!round) return;
+    const winner = computeWinner(round);
+    const { counts, total } = computeVoteCounts(round);
 
     const result = {
-      award: state.currentVoting.title,
-      team: state.currentVoting.team,
+      id: round.id,
+      award: round.title,
+      team: round.team,
       winnerName: winner ? winner.name : 'No votes cast',
       winnerCardId: winner ? winner.cardId : null,
       counts,
       total,
+      broadcastedAt: null,
     };
 
-    io.emit('award_result', result);
+    io.to('admin').emit('award_result', result);
 
-    // Flash the winning constellation
-    if (result.winnerCardId && ledMapDb.cards?.[result.winnerCardId]) {
-      const ledInfo = ledMapDb.cards[result.winnerCardId];
+    state.votingHistory.push({
+      ...round,
+      winnerName: result.winnerName,
+      winnerCardId: result.winnerCardId,
+      closedAt: Date.now(),
+      result,
+    });
+
+    state.storyEvents.push({
+      type: 'AWARD_TALLIED',
+      description: `${result.award} tallied — winner: ${result.winnerName} (not yet revealed to guests)`,
+      timestamp: Date.now(),
+      data: result,
+    });
+    io.to('admin').emit('story_event', state.storyEvents[state.storyEvents.length - 1]);
+    delete state.activeVotings[voteId];
+  });
+
+  // Admin: broadcast a superlative to all guests
+  socket.on('admin_broadcast_award', ({ voteId }) => {
+    const entry = state.votingHistory.find(v => v.id === voteId);
+    if (!entry || !entry.result) return;
+
+    entry.result.broadcastedAt = Date.now();
+    io.emit('award_result', entry.result);
+
+    if (entry.result.winnerCardId && ledMapDb.cards?.[entry.result.winnerCardId]) {
+      const ledInfo = ledMapDb.cards[entry.result.winnerCardId];
       const group = ledMapDb.constellationGroups?.[ledInfo.constellation];
       if (group) {
         emitLed('led_award', {
@@ -496,23 +490,49 @@ io.on('connection', (socket) => {
       }
     }
 
-    // Archive
-    state.votingHistory.push({
-      ...state.currentVoting,
-      winnerName: result.winnerName,
-      winnerCardId: result.winnerCardId,
-      closedAt: Date.now(),
-    });
-
     state.storyEvents.push({
       type: 'AWARD_GIVEN',
-      description: `${result.award} awarded to ${result.winnerName} (${result.team})`,
+      description: `${entry.result.award} revealed to guests — winner: ${entry.result.winnerName} (${entry.result.team})`,
       timestamp: Date.now(),
-      data: result,
+      data: entry.result,
     });
     io.to('admin').emit('story_event', state.storyEvents[state.storyEvents.length - 1]);
+    io.to('admin').emit('award_broadcasted', { voteId, broadcastedAt: entry.result.broadcastedAt });
+  });
 
-    state.currentVoting = null;
+  // Admin: reveal a preset award to all guests
+  socket.on('admin_reveal_preset_award', ({ awardKey, awardName, awardIcon, winnerName }) => {
+    if (!awardKey || !winnerName) return;
+    const result = {
+      id: `preset_${awardKey}`,
+      awardKey,
+      award: awardName,
+      awardIcon: awardIcon || '★',
+      winnerName,
+      preset: true,
+      broadcastedAt: Date.now(),
+    };
+    state.presetAwards[awardKey] = result;
+    io.emit('preset_award_result', result);
+    io.to('admin').emit('preset_award_confirmed', result);
+    state.storyEvents.push({ type: 'AWARD_GIVEN', description: `${awardName} awarded to ${winnerName}`, timestamp: Date.now(), data: result });
+    io.to('admin').emit('story_event', state.storyEvents[state.storyEvents.length - 1]);
+  });
+
+  // Admin: unreveal a preset award
+  socket.on('admin_unreveal_preset_award', ({ awardKey }) => {
+    delete state.presetAwards[awardKey];
+    io.emit('preset_award_unreveal', { awardKey });
+    io.to('admin').emit('preset_award_confirmed_unreveal', { awardKey });
+    state.storyEvents.push({ type: 'AWARD_GIVEN', description: `Preset award unrevealed: ${awardKey}`, timestamp: Date.now(), data: { awardKey } });
+  });
+
+  // Admin: unreveal a superlative
+  socket.on('admin_unreveal_superlative', ({ voteId }) => {
+    const entry = state.votingHistory.find(v => v.id === voteId);
+    if (entry && entry.result) entry.result.broadcastedAt = null;
+    io.emit('award_unreveal', { voteId });
+    io.to('admin').emit('award_broadcasted', { voteId, broadcastedAt: null });
   });
 
   // Admin: broadcast message
@@ -533,10 +553,9 @@ io.on('connection', (socket) => {
     io.emit('broadcast_cleared');
   });
 
-  // Admin: set terminal solution (answer key)
+  // Admin: set terminal solution
   socket.on('admin_set_terminal_solution', ({ solution }) => {
     if (!socket.rooms.has('admin')) return;
-    // solution = { IRIS: "N", VEGA: "E", ... }
     state.terminalSolution = solution;
     socket.emit('terminal_solution_set', { ok: true });
   });
@@ -547,11 +566,8 @@ io.on('connection', (socket) => {
       socket.emit('terminal_result', { correct: false, message: 'Terminal not yet active.' });
       return;
     }
-    // answer = { IRIS: "N", VEGA: "E", ... }
     const keys = Object.keys(state.terminalSolution);
-    const correct = keys.every(k =>
-      answer[k] && answer[k].toUpperCase() === state.terminalSolution[k]
-    );
+    const correct = keys.every(k => answer[k] && answer[k].toUpperCase() === state.terminalSolution[k]);
     if (correct) {
       state.terminalSolved = true;
       io.emit('terminal_solved', { message: 'MIDNIGHT ECLIPSE COMPLETE' });
@@ -569,7 +585,7 @@ io.on('connection', (socket) => {
     emitLed('led_finale', {});
   });
 
-  // Admin: evaluate pair (admin can trigger on behalf of two scanned cards)
+  // Admin: evaluate pair
   socket.on('admin_evaluate_pair', ({ cardIdA, cardIdB }) => {
     if (!socket.rooms.has('admin')) return;
     const cardA = cardDb.find(c => c.id === cardIdA);
@@ -584,16 +600,8 @@ io.on('connection', (socket) => {
     if (!socket.rooms.has('admin')) return;
     const clue = Array.isArray(clueDb[bucket]) ? clueDb[bucket].find(c => c.id === clueId) : null;
     if (!clue) return;
-
     state.clueStates[clueId] = { unlocked: true, unlockedAt: Date.now(), unlockedBy: 'admin' };
-
-    state.storyEvents.push({
-      type: 'CLUE_UNLOCKED',
-      description: `Clue unlocked: "${clue.text.slice(0, 40)}..."`,
-      timestamp: Date.now(),
-      data: { clue, bucket },
-    });
-
+    state.storyEvents.push({ type: 'CLUE_UNLOCKED', description: `Clue unlocked: "${clue.text.slice(0, 40)}..."`, timestamp: Date.now(), data: { clue, bucket } });
     io.emit('clue_unlocked', { clue });
     io.to('admin').emit('clue_state_updated', { clueId, state: state.clueStates[clueId] });
     io.to('admin').emit('story_event', state.storyEvents[state.storyEvents.length - 1]);
@@ -601,40 +609,27 @@ io.on('connection', (socket) => {
 
   // Pi device auth
   socket.on('pi_auth', ({ password }) => {
-    if (password !== ADMIN_PASSWORD) {
-      socket.emit('pi_auth_fail');
-      return;
-    }
+    if (password !== ADMIN_PASSWORD) { socket.emit('pi_auth_fail'); return; }
     socket.join('pi');
     console.log('[Pi] LED board connected:', socket.id);
     socket.emit('pi_ready', buildPiState());
     io.to('admin').emit('pi_connected');
   });
 
-  // Pi requests full state sync
   socket.on('pi_sync', () => {
     if (!socket.rooms.has('pi')) return;
     socket.emit('pi_full_state', buildPiState());
   });
 
-  // Admin: manual LED control
-  socket.on('admin_led_test', () => {
-    if (!socket.rooms.has('admin')) return;
-    emitLed('led_test', {});
-  });
-
-  socket.on('admin_led_all_off', () => {
-    if (!socket.rooms.has('admin')) return;
-    emitLed('led_all_off', {});
-  });
-
+  // Admin: LED controls
+  socket.on('admin_led_test', () => { if (!socket.rooms.has('admin')) return; emitLed('led_test', {}); });
+  socket.on('admin_led_all_off', () => { if (!socket.rooms.has('admin')) return; emitLed('led_all_off', {}); });
   socket.on('admin_led_constellation', ({ constellation, mode }) => {
     if (!socket.rooms.has('admin')) return;
     const group = ledMapDb.constellationGroups?.[constellation];
     if (!group) return;
     emitLed('led_constellation', { constellation, indices: group.indices, color: group.color, mode: mode || 'pulse' });
   });
-
   socket.on('admin_led_brightness', ({ brightness }) => {
     if (!socket.rooms.has('admin')) return;
     emitLed('led_brightness', { brightness: Math.max(0, Math.min(255, parseInt(brightness) || 100)) });
@@ -650,29 +645,20 @@ io.on('connection', (socket) => {
       const leaving = guests.get(socket.id);
       guests.delete(socket.id);
       emitGuestsUpdated();
-      if (leaving?.cardId) {
-        io.emit('card_offline', { cardId: leaving.cardId });
-      }
+      if (leaving?.cardId) io.emit('card_offline', { cardId: leaving.cardId });
     }
   });
 });
 
-function closeVoting() {
-  if (!state.currentVoting) return;
-  if (state.currentVoting._autoCloseTimer) {
-    clearTimeout(state.currentVoting._autoCloseTimer);
-  }
-  state.currentVoting.status = 'closed';
-  io.emit('voting_closed');
-
-  const { counts, total } = computeVoteCounts();
-  const winner = computeWinner();
-  io.to('admin').emit('voting_results', {
-    counts,
-    total,
-    winnerId: winner ? winner.id : null,
-    winnerName: winner ? winner.name : null,
-  });
+function closeVoting(voteId) {
+  const round = state.activeVotings[voteId];
+  if (!round || round.status === 'closed') return;
+  if (round._autoCloseTimer) clearTimeout(round._autoCloseTimer);
+  round.status = 'closed';
+  io.emit('voting_closed', { voteId });
+  const { counts, total } = computeVoteCounts(round);
+  const winner = computeWinner(round);
+  io.to('admin').emit('voting_results', { voteId, counts, total, winnerId: winner?.id || null, winnerName: winner?.name || null });
 }
 
 // ─── checkConstellationActivation ─────────────────────────────────────────────
@@ -681,14 +667,11 @@ function checkConstellationActivation(newCardId) {
   const newCard = cardDb.find(c => c.id === newCardId);
   if (!newCard) return;
 
-  // Find all online guests with same constellation
   const onlineCards = [];
   for (const guest of guests.values()) {
     if (!guest.cardId) continue;
     const card = cardDb.find(c => c.id === guest.cardId);
-    if (card && card.constellation === newCard.constellation) {
-      onlineCards.push(card);
-    }
+    if (card && card.constellation === newCard.constellation) onlineCards.push(card);
   }
 
   if (onlineCards.length >= 2) {
@@ -708,11 +691,7 @@ function checkConstellationActivation(newCardId) {
     const group = ledMapDb.constellationGroups?.[newCard.constellation];
     if (group) {
       if (onlineCards.length >= 3) {
-        emitLed('led_constellation_full', {
-          constellation: newCard.constellation,
-          indices: group.indices,
-          color: group.color,
-        });
+        emitLed('led_constellation_full', { constellation: newCard.constellation, indices: group.indices, color: group.color });
       } else if (onlineCards.length === 2) {
         emitLed('led_constellation_partial', {
           constellation: newCard.constellation,
@@ -726,7 +705,6 @@ function checkConstellationActivation(newCardId) {
 
 // ─── Static files ─────────────────────────────────────────────────────────────
 
-// Serve /data route from root data/ folder so browser pages can fetch JSON
 app.use('/data', express.static(path.join(__dirname, 'data')));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -737,9 +715,7 @@ app.get('/api/card/:id', (req, res) => {
   res.json({ card, constellation: constData });
 });
 
-app.get('/api/led-map', (req, res) => {
-  res.json(ledMapDb);
-});
+app.get('/api/led-map', (req, res) => { res.json(ledMapDb); });
 
 app.get('/api/pi/status', (req, res) => {
   const piSockets = [...io.sockets.adapter.rooms.get('pi') || []];

@@ -659,7 +659,45 @@ socket.on('voting_closed', () => {
   if (!overlayVoting.hidden || !guestState.myVote) showOverlay('pending');
 });
 
-socket.on('award_result',     (result) => { stopTimer(); showResult(result); });
+// ─── Award sessionStorage sync ────────────────────────────────────────────
+// Keeps awards.html up to date no matter which page the guest is currently on.
+function loadAwardSession(key, fallback) {
+  try { return JSON.parse(sessionStorage.getItem(key) || 'null') || fallback; } catch { return fallback; }
+}
+function saveAwardSession(key, val) {
+  try { sessionStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+socket.on('preset_award_result', (res) => {
+  let list = loadAwardSession('claws_preset_awards', []);
+  list = list.filter(a => a.awardKey !== res.awardKey);
+  list.push(res);
+  saveAwardSession('claws_preset_awards', list);
+});
+
+socket.on('preset_award_unreveal', ({ awardKey }) => {
+  let list = loadAwardSession('claws_preset_awards', []);
+  list = list.filter(a => a.awardKey !== awardKey);
+  saveAwardSession('claws_preset_awards', list);
+});
+
+socket.on('award_result', (result) => {
+  stopTimer();
+  showResult(result);
+  // Sync to sessionStorage so awards.html reflects this when navigated to
+  if (result.broadcastedAt) {
+    let list = loadAwardSession('claws_superlative_awards', []);
+    if (!list.find(a => a.id === result.id)) list.push(result);
+    saveAwardSession('claws_superlative_awards', list);
+  }
+});
+
+socket.on('award_unreveal', ({ voteId }) => {
+  let list = loadAwardSession('claws_superlative_awards', []);
+  list = list.filter(a => a.id !== voteId);
+  saveAwardSession('claws_superlative_awards', list);
+});
+
 socket.on('broadcast',        (msg)    => { guestState.broadcast = msg; showBroadcast(msg); });
 socket.on('broadcast_cleared',()       => { guestState.broadcast = null; hideBroadcast(); });
 socket.on('clue_unlocked',    ({ clue })=> showClueNotification(clue.text));

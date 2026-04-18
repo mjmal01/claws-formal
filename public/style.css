@@ -2337,6 +2337,67 @@ body.page { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 .award-desc { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
 
+.award-pending { border-left: 3px solid var(--warning, #f5a623); }
+.award-revealed { border-left: 3px solid var(--success); opacity: 0.7; }
+
+.award-status-badge.revealed {
+  font-size: 11px;
+  color: var(--success);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+.btn-broadcast-award {
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #6c8ef5, #9b6cf7);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: opacity 0.15s;
+}
+.btn-broadcast-award:hover { opacity: 0.85; }
+
+/* Preset awards panel */
+.preset-awards-list { display: flex; flex-direction: column; gap: 10px; }
+.preset-award-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.preset-award-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.preset-award-icon { font-size: 16px; }
+.preset-award-controls { display: flex; gap: 8px; align-items: center; }
+.preset-winner-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.preset-winner-input:focus { outline: none; border-color: var(--accent); }
+.preset-winner-input:disabled { opacity: 0.5; }
+
+/* Active vote cards (multiple) */
+.active-vote-card { margin-bottom: 12px; }
+
 .live-banner {
   background: linear-gradient(120deg, rgba(108, 142, 245, 0.18), rgba(155, 108, 247, 0.18));
   border: 1px solid var(--border-bright);

@@ -15,6 +15,7 @@ const adminState = {
   currentVoting: null,
   currentVotingOptions: [],
   votingHistory: [],
+  presetAwardsState: {},  // awardKey → result (tracks what's been revealed)
   interactionLog: [],
   storyEvents: [],
   phaseStartTimes: {},
@@ -38,20 +39,24 @@ socket.on('admin_auth_fail', () => {
 });
 
 socket.on('admin_ready', (data) => {
-  adminState.phase          = data.state.phase;
-  adminState.speechIndex    = data.state.speechIndex;
-  adminState.speechOrder    = data.speechOrder || [];
-  adminState.guests         = data.guests || [];
-  adminState.cards          = data.cards || [];
-  adminState.constellations = data.constellations || {};
-  adminState.clues          = data.clues || {};
-  adminState.clueStates     = data.clueStates || {};
-  adminState.interactionLog = data.interactionLog || [];
-  adminState.storyEvents    = data.storyEvents || [];
+  adminState.phase           = data.state.phase;
+  adminState.speechIndex     = data.state.speechIndex;
+  adminState.speechOrder     = data.speechOrder || [];
+  adminState.guests          = data.guests || [];
+  adminState.cards           = data.cards || [];
+  adminState.constellations  = data.constellations || {};
+  adminState.clues           = data.clues || {};
+  adminState.clueStates      = data.clueStates || {};
+  adminState.interactionLog  = data.interactionLog || [];
+  adminState.storyEvents     = data.storyEvents || [];
   adminState.phaseStartTimes = data.phaseStartTimes || {};
   adminState.terminalSolution = data.terminalSolution || null;
-  adminState.votingHistory  = data.state.votingHistory || [];
-  adminState.currentVoting  = data.state.currentVoting || null;
+  adminState.votingHistory   = data.state.votingHistory || [];
+  adminState.currentVoting   = data.state.currentVoting || null;
+  adminState.presetAwardsState = {};
+  for (const [key, val] of Object.entries(data.presetAwards || {})) {
+    adminState.presetAwardsState[key] = val;
+  }
 
   if (adminState.currentVoting) {
     adminState.currentVotingOptions = adminState.currentVoting.options || [];
@@ -79,17 +84,26 @@ function initUI() {
   updateStats();
   renderLedConstellationGrid();
 
-  // Restore active vote panel if voting is in progress
-  if (adminState.currentVoting) {
-    showActiveVotePanel(adminState.currentVoting);
-    if (adminState.currentVoting.status === 'closed') {
-      markVotingClosed();
+  // Restore any active vote cards
+  if (adminState.state?.activeVotings) {
+    for (const round of Object.values(adminState.state.activeVotings)) {
+      activeVoteCards[round.id] = { round, options: round.options };
+      renderActiveVoteCard(round.id);
+      if (round.status === 'closed') {
+        const badge    = document.getElementById(`badge-${round.id}`);
+        const closeBtn = document.getElementById(`close-btn-${round.id}`);
+        const revBtn   = document.getElementById(`reveal-btn-${round.id}`);
+        if (badge)    { badge.textContent = 'CLOSED'; badge.classList.add('closed'); }
+        if (closeBtn)  closeBtn.hidden  = true;
+        if (revBtn)    revBtn.hidden    = false;
+      }
     }
   }
 
   renderVoteHistory();
+  renderSuperlativePanel();
+  renderPresetAwardsPanel();
 
-  // Restore terminal status
   if (adminState.terminalSolution) {
     const statusEl = document.getElementById('terminal-admin-status');
     if (statusEl) statusEl.textContent = `Solution set: ${JSON.stringify(adminState.terminalSolution)}`;
@@ -159,7 +173,7 @@ function updateSpeechDisplay() {
   if (nextBtn) nextBtn.disabled = idx >= order.length - 1;
 }
 
-socket.on('speech_changed', ({ index, speech }) => {
+socket.on('speech_changed', ({ index }) => {
   adminState.speechIndex = index;
   updateSpeechDisplay();
 });
@@ -230,115 +244,270 @@ function startVote() {
   socket.emit('admin_start_voting', { title, team, description: desc, options, timeLimit });
 }
 
+// ─── Multi-vote card management ───────────────────────────────────────────────
+
+const activeVoteCards = {};
+
 socket.on('voting_opened', (round) => {
-  adminState.currentVoting = round;
-  adminState.currentVotingOptions = round.options;
-  showActiveVotePanel(round);
+  activeVoteCards[round.id] = { round, options: round.options };
+  renderActiveVoteCard(round.id);
 });
 
-function showActiveVotePanel(round) {
-  document.getElementById('panel-create-vote').hidden = true;
-  document.getElementById('panel-active-vote').hidden = false;
+function renderActiveVoteCard(voteId) {
+  const container = document.getElementById('active-votes-container');
+  if (!container) return;
 
-  document.getElementById('active-vote-title').textContent = round.title;
-  document.getElementById('active-vote-team').textContent  = round.team || '';
+  const old = document.getElementById(`vote-card-${voteId}`);
+  if (old) old.remove();
 
-  const badge = document.getElementById('vote-status-badge');
-  badge.textContent = 'OPEN';
-  badge.classList.remove('closed');
+  const entry = activeVoteCards[voteId];
+  if (!entry) return;
 
-  document.getElementById('close-vote-btn').hidden    = false;
-  document.getElementById('reveal-winner-btn').hidden = true;
-
-  renderLiveResultBars(round.options, {}, 0);
-  document.getElementById('vote-count').textContent  = '0';
-  document.getElementById('guest-count').textContent = adminState.guests.length;
-  document.getElementById('vote-progress-fill').style.width = '0%';
-}
-
-socket.on('vote_update', ({ counts, total, guestCount }) => {
-  document.getElementById('vote-count').textContent  = total;
-  document.getElementById('guest-count').textContent = guestCount;
-  const pct = guestCount > 0 ? Math.round((total / guestCount) * 100) : 0;
-  document.getElementById('vote-progress-fill').style.width = pct + '%';
-  renderLiveResultBars(adminState.currentVotingOptions, counts, total);
-});
-
-function renderLiveResultBars(options, counts, total, winnerId = null) {
-  const el = document.getElementById('vote-live-results');
-  if (!el) return;
-  el.innerHTML = '';
-  options.forEach(opt => {
-    const count = counts[opt.id] || 0;
-    const pct   = total > 0 ? Math.round((count / total) * 100) : 0;
-    const isWinner = winnerId && opt.id === winnerId;
-    const row = document.createElement('div');
-    row.className = 'vote-bar-row';
-    row.innerHTML = `
-      <div class="vote-bar-label">
-        <span>${escHtml(opt.name)}${isWinner ? ' ★' : ''}</span>
-        <span class="vote-bar-count">${count} (${pct}%)</span>
+  const { round } = entry;
+  const card = document.createElement('div');
+  card.className = 'admin-panel active-vote-card';
+  card.id = `vote-card-${voteId}`;
+  card.innerHTML = `
+    <div class="panel-title">
+      ${escHtml(round.title)}
+      <span class="vote-status-badge" id="badge-${voteId}">OPEN</span>
+    </div>
+    ${round.team ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${escHtml(round.team)}</div>` : ''}
+    <div class="vote-progress">
+      <div class="vote-progress-text">
+        <span id="vcount-${voteId}">0</span> / <span id="gcount-${voteId}">${adminState.guests.length}</span> votes
       </div>
-      <div class="vote-bar">
-        <div class="vote-bar-fill${isWinner ? ' winner' : ''}" style="width:${pct}%"></div>
+      <div class="vote-progress-bar">
+        <div class="vote-progress-fill" id="vfill-${voteId}"></div>
       </div>
-    `;
-    el.appendChild(row);
+    </div>
+    <div class="vote-live-results" id="vbars-${voteId}"></div>
+    <div class="vote-actions">
+      <button class="btn btn--danger btn--sm" id="close-btn-${voteId}">■ Close Voting</button>
+      <button class="btn btn--primary btn--sm" id="reveal-btn-${voteId}" hidden>★ Tally & Archive</button>
+    </div>`;
+  container.prepend(card);
+
+  renderVoteBars(voteId, round.options, {}, 0);
+
+  document.getElementById(`close-btn-${voteId}`).addEventListener('click', () => {
+    socket.emit('admin_close_voting', { voteId });
+  });
+  document.getElementById(`reveal-btn-${voteId}`).addEventListener('click', () => {
+    socket.emit('admin_reveal_winner', { voteId });
+    setTimeout(() => {
+      const c = document.getElementById(`vote-card-${voteId}`);
+      if (c) c.remove();
+      delete activeVoteCards[voteId];
+    }, 800);
   });
 }
 
-document.getElementById('close-vote-btn')?.addEventListener('click', () => {
-  socket.emit('admin_close_voting');
-});
-
-document.getElementById('reveal-winner-btn')?.addEventListener('click', () => {
-  socket.emit('admin_reveal_winner');
-  setTimeout(() => {
-    document.getElementById('panel-active-vote').hidden = true;
-    document.getElementById('panel-create-vote').hidden = false;
-    document.getElementById('reveal-winner-btn').hidden = true;
-  }, 1000);
-});
-
-socket.on('voting_results', ({ counts, total, winnerId, winnerName }) => {
-  markVotingClosed();
-  renderLiveResultBars(adminState.currentVotingOptions, counts, total, winnerId);
-  document.getElementById('vote-count').textContent = total;
-  const pct = adminState.guests.length > 0
-    ? Math.round((total / adminState.guests.length) * 100) : 0;
-  document.getElementById('vote-progress-fill').style.width = pct + '%';
-});
-
-function markVotingClosed() {
-  const badge = document.getElementById('vote-status-badge');
-  badge.textContent = 'CLOSED';
-  badge.classList.add('closed');
-  document.getElementById('close-vote-btn').hidden    = true;
-  document.getElementById('reveal-winner-btn').hidden = false;
+function renderVoteBars(voteId, options, counts, total, winnerId = null) {
+  const el = document.getElementById(`vbars-${voteId}`);
+  if (!el) return;
+  el.innerHTML = options.map(opt => {
+    const count    = counts[opt.id] || 0;
+    const pct      = total > 0 ? Math.round((count / total) * 100) : 0;
+    const isWinner = winnerId && opt.id === winnerId;
+    return `
+      <div class="vote-bar-row">
+        <div class="vote-bar-label">
+          <span>${escHtml(opt.name)}${isWinner ? ' ★' : ''}</span>
+          <span class="vote-bar-count">${count} (${pct}%)</span>
+        </div>
+        <div class="vote-bar">
+          <div class="vote-bar-fill${isWinner ? ' winner' : ''}" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-socket.on('voting_closed', () => {
-  markVotingClosed();
+socket.on('vote_update', ({ voteId, counts, total, guestCount }) => {
+  const entry = activeVoteCards[voteId];
+  if (!entry) return;
+  const vc = document.getElementById(`vcount-${voteId}`);
+  const gc = document.getElementById(`gcount-${voteId}`);
+  const vf = document.getElementById(`vfill-${voteId}`);
+  if (vc) vc.textContent = total;
+  if (gc) gc.textContent = guestCount;
+  const pct = guestCount > 0 ? Math.round((total / guestCount) * 100) : 0;
+  if (vf) vf.style.width = pct + '%';
+  renderVoteBars(voteId, entry.options, counts, total);
+});
+
+socket.on('voting_results', ({ voteId, counts, total, winnerId }) => {
+  const entry = activeVoteCards[voteId];
+  if (!entry) return;
+  renderVoteBars(voteId, entry.options, counts, total, winnerId);
+  const vc = document.getElementById(`vcount-${voteId}`);
+  if (vc) vc.textContent = total;
+});
+
+socket.on('voting_closed', ({ voteId }) => {
+  const id = voteId || Object.keys(activeVoteCards)[0];
+  if (!id) return;
+  const badge     = document.getElementById(`badge-${id}`);
+  const closeBtn  = document.getElementById(`close-btn-${id}`);
+  const revealBtn = document.getElementById(`reveal-btn-${id}`);
+  if (badge)     { badge.textContent = 'CLOSED'; badge.classList.add('closed'); }
+  if (closeBtn)  closeBtn.hidden  = true;
+  if (revealBtn) revealBtn.hidden = false;
 });
 
 socket.on('award_result', (result) => {
-  if (adminState.currentVoting) {
+  const existing = adminState.votingHistory.find(v => v.id === result.id);
+  if (existing) {
+    existing.broadcastedAt = result.broadcastedAt;
+  } else {
     adminState.votingHistory.push({
-      title:      adminState.currentVoting.title || result.award,
-      team:       adminState.currentVoting.team  || result.team,
-      winnerName: result.winnerName,
-      winnerCardId: result.winnerCardId,
+      id: result.id, title: result.award, team: result.team,
+      winnerName: result.winnerName, winnerCardId: result.winnerCardId,
+      counts: result.counts, total: result.total, broadcastedAt: result.broadcastedAt,
     });
-    adminState.currentVoting = null;
-    adminState.currentVotingOptions = [];
   }
   renderVoteHistory();
   renderAwardsList();
-  setTimeout(() => {
-    document.getElementById('panel-active-vote').hidden = true;
-    document.getElementById('panel-create-vote').hidden = false;
-    resetVoteForm();
-  }, 1000);
+  renderSuperlativePanel();
+});
+
+socket.on('award_broadcasted', ({ voteId, broadcastedAt }) => {
+  const entry = adminState.votingHistory.find(v => v.id === voteId);
+  if (entry) entry.broadcastedAt = broadcastedAt;
+  renderAwardsList();
+  renderSuperlativePanel();
+});
+
+// ─── Superlative reveal panel ─────────────────────────────────────────────────
+
+function renderSuperlativePanel() {
+  const el = document.getElementById('superlative-reveal-list');
+  if (!el) return;
+  const tallied = adminState.votingHistory.filter(v => v.winnerName);
+  if (!tallied.length) {
+    el.innerHTML = '<div class="empty-state">No superlatives tallied yet</div>';
+    return;
+  }
+  el.innerHTML = tallied.map(a => {
+    const revealed = !!a.broadcastedAt;
+    return `
+    <div class="preset-award-row${revealed ? ' award-revealed' : ''}">
+      <div class="preset-award-meta">
+        <span class="preset-award-icon">✦</span>
+        <span class="preset-award-label">${escHtml(a.title || '')}</span>
+      </div>
+      <div style="font-size:13px;color:var(--gold);font-weight:600;padding:2px 0 4px">
+        ★ ${escHtml(a.winnerName)}
+      </div>
+      ${a.team ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">${escHtml(a.team)}</div>` : ''}
+      ${revealed
+        ? `<div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+             <div style="font-size:11px;color:var(--success);letter-spacing:.04em">📢 Revealed to guests</div>
+             <button class="btn btn--ghost btn--sm superlative-unreveal-btn" data-vote-id="${escHtml(a.id || '')}">↩ Unreveal</button>
+           </div>`
+        : `<button class="btn btn--primary btn--sm superlative-reveal-btn" data-vote-id="${escHtml(a.id || '')}">📢 Reveal to Guests</button>`
+      }
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.superlative-reveal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const voteId = btn.dataset.voteId;
+      if (!voteId) return;
+      if (!confirm('Reveal this superlative winner to all guests now?')) return;
+      socket.emit('admin_broadcast_award', { voteId });
+    });
+  });
+
+  el.querySelectorAll('.superlative-unreveal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const voteId = btn.dataset.voteId;
+      if (!voteId) return;
+      if (!confirm('Remove this superlative winner from guest screens?')) return;
+      socket.emit('admin_unreveal_superlative', { voteId });
+    });
+  });
+}
+
+// ─── Preset awards ────────────────────────────────────────────────────────────
+
+const PRESET_AWARDS = [
+  { key: 'MVP',     name: 'MVP Award',     icon: '★' },
+  { key: 'TRUST',   name: 'Trust Award',   icon: '⚭' },
+  { key: 'GEMINI',  name: 'Gemini Award',  icon: '⇌' },
+  { key: 'POLARIS', name: 'Polaris Award', icon: '◉' },
+  { key: 'MENTEE',  name: 'Mentee Award',  icon: '↑' },
+  { key: 'MENTOR',  name: 'Mentor Award',  icon: '↓' },
+];
+
+function renderPresetAwardsPanel() {
+  const el = document.getElementById('preset-awards-list');
+  if (!el) return;
+  el.innerHTML = PRESET_AWARDS.map(award => {
+    const revealed = adminState.presetAwardsState[award.key];
+    if (revealed) {
+      return `
+      <div class="preset-award-row award-revealed">
+        <div class="preset-award-meta">
+          <span class="preset-award-icon">${award.icon}</span>
+          <span class="preset-award-label">${award.name}</span>
+        </div>
+        <div style="font-size:13px;color:var(--gold);font-weight:600;padding:2px 0 4px">★ ${escHtml(revealed.winnerName)}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+          <div style="font-size:11px;color:var(--success)">📢 Revealed to guests</div>
+          <button class="btn btn--ghost btn--sm preset-unreveal-btn" data-key="${award.key}">↩ Unreveal</button>
+        </div>
+      </div>`;
+    }
+    return `
+      <div class="preset-award-row">
+        <div class="preset-award-meta">
+          <span class="preset-award-icon">${award.icon}</span>
+          <span class="preset-award-label">${award.name}</span>
+        </div>
+        <div class="preset-award-controls">
+          <input type="text" class="preset-winner-input" id="preset-input-${award.key}" placeholder="Winner name...">
+          <button class="btn btn--primary btn--sm preset-reveal-btn" data-key="${award.key}" data-name="${award.name}" data-icon="${award.icon}">Reveal</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  el.querySelectorAll('.preset-reveal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key  = btn.dataset.key;
+      const name = btn.dataset.name;
+      const icon = btn.dataset.icon;
+      const input = document.getElementById(`preset-input-${key}`);
+      const winnerName = input ? input.value.trim() : '';
+      if (!winnerName) { input && input.focus(); return; }
+      if (!confirm(`Reveal ${name} to all guests?\nWinner: ${winnerName}`)) return;
+      socket.emit('admin_reveal_preset_award', { awardKey: key, awardName: name, awardIcon: icon, winnerName });
+    });
+  });
+
+  el.querySelectorAll('.preset-unreveal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remove this award from guest screens?')) return;
+      socket.emit('admin_unreveal_preset_award', { awardKey: btn.dataset.key });
+    });
+  });
+}
+
+socket.on('preset_award_confirmed', (result) => {
+  adminState.presetAwardsState[result.awardKey] = result;
+  renderPresetAwardsPanel();
+});
+
+socket.on('preset_award_confirmed_unreveal', ({ awardKey }) => {
+  delete adminState.presetAwardsState[awardKey];
+  renderPresetAwardsPanel();
+});
+
+socket.on('award_unreveal', ({ voteId }) => {
+  const entry = adminState.votingHistory.find(v => v.id === voteId);
+  if (entry) entry.broadcastedAt = null;
+  renderAwardsList();
+  renderSuperlativePanel();
 });
 
 function resetVoteForm() {
@@ -420,13 +589,12 @@ function updateStats() {
   document.getElementById('stat-interactions').textContent = adminState.interactionLog.length;
 }
 
-// ─── Card Registry (Tab: Cards) ─────────────────────────────────────────────
+// ─── Card Registry ─────────────────────────────────────────────────────────
 
 function renderCardRegistry(cards) {
   const grid = document.getElementById('card-registry-grid');
   if (!grid) return;
 
-  // Group by constellation
   const byConst = {};
   for (const card of cards) {
     if (!byConst[card.constellation]) byConst[card.constellation] = [];
@@ -458,7 +626,6 @@ function renderCardRegistry(cards) {
     `;
   }).join('');
 
-  // Search filter
   document.getElementById('registry-search')?.addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
     document.querySelectorAll('.registry-card').forEach(card => {
@@ -478,7 +645,7 @@ function updateCardRegistryOnlineStatus() {
   });
 }
 
-// ─── Interactions (Tab: Interactions) ───────────────────────────────────────
+// ─── Interactions ───────────────────────────────────────────────────────────
 
 socket.on('new_interaction', (interaction) => {
   adminState.interactionLog.push(interaction);
@@ -521,7 +688,6 @@ function renderInteractionLog(filter = 'all') {
     }
   }).join('');
 
-  // Re-attach filter buttons
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -573,7 +739,7 @@ socket.on('pair_result', ({ cardA, cardB, results }) => {
     </div>`;
 });
 
-// ─── Clues (Tab: Clues) ─────────────────────────────────────────────────────
+// ─── Clues ─────────────────────────────────────────────────────────────────
 
 socket.on('clue_state_updated', ({ clueId, state }) => {
   adminState.clueStates[clueId] = state;
@@ -609,7 +775,7 @@ function renderClues() {
   });
 }
 
-// ─── Story (Tab: Story) ────────────────────────────────────────────────────
+// ─── Story ────────────────────────────────────────────────────────────────
 
 socket.on('story_event', (event) => {
   adminState.storyEvents.push(event);
@@ -619,17 +785,10 @@ socket.on('story_event', (event) => {
 function renderStoryTimeline() {
   const el = document.getElementById('story-timeline');
   if (!el) return;
-
   const events = adminState.storyEvents.slice().reverse();
   if (!events.length) { el.innerHTML = '<div class="empty-state">No events yet</div>'; return; }
 
-  const icons = {
-    PHASE_CHANGE: '◎',
-    RARE_INTERACTION: '⚡',
-    CLUE_UNLOCKED: '✦',
-    AWARD_GIVEN: '★',
-    GROUP_INTERACTION: '◈',
-  };
+  const icons = { PHASE_CHANGE: '◎', RARE_INTERACTION: '⚡', CLUE_UNLOCKED: '✦', AWARD_GIVEN: '★', GROUP_INTERACTION: '◈' };
 
   el.innerHTML = events.slice(0, 40).map(ev => `
     <div class="story-event-item ${ev.type.toLowerCase()}">
@@ -646,14 +805,29 @@ function renderAwardsList() {
   const el = document.getElementById('awards-list');
   if (!el) return;
   const awards = adminState.votingHistory.filter(v => v.winnerName);
-  if (!awards.length) { el.innerHTML = '<div class="empty-state">No awards given yet</div>'; return; }
-  el.innerHTML = awards.map(a => `
-    <div class="award-item">
+  if (!awards.length) { el.innerHTML = '<div class="empty-state">No awards tallied yet</div>'; return; }
+  el.innerHTML = awards.map(a => {
+    const revealed = !!a.broadcastedAt;
+    return `
+    <div class="award-item${revealed ? ' award-revealed' : ' award-pending'}">
       <div class="award-name">${escHtml(a.title || a.award || '')}</div>
       <div class="award-winner">★ ${escHtml(a.winnerName)}</div>
       <div class="award-team">${escHtml(a.team || '')}</div>
-    </div>
-  `).join('');
+      ${revealed
+        ? `<div class="award-status-badge revealed">📢 Revealed to guests</div>`
+        : `<button class="btn-broadcast-award" data-vote-id="${escHtml(a.id || '')}">📢 Reveal to Guests</button>`
+      }
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.btn-broadcast-award').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const voteId = btn.dataset.voteId;
+      if (!voteId) return;
+      if (!confirm('Reveal this award winner to all guests now?')) return;
+      socket.emit('admin_broadcast_award', { voteId });
+    });
+  });
 }
 
 function renderPhaseProgress() {
@@ -694,7 +868,7 @@ socket.on('terminal_solved', () => {
   if (statusEl) statusEl.textContent = '✓ MIDNIGHT ECLIPSE COMPLETE broadcast sent';
 });
 
-// ─── Connection status ─────────────────────────────────────────────────────
+// ─── Connection ─────────────────────────────────────────────────────────────
 
 socket.on('connect', () => {
   // handled via admin_ready
@@ -702,12 +876,8 @@ socket.on('connect', () => {
 
 // ─── Pi LED Panel ────────────────────────────────────────────────────────────
 
-socket.on('pi_connected', () => {
-  updatePiStatus(true);
-});
-socket.on('pi_disconnected', () => {
-  updatePiStatus(false);
-});
+socket.on('pi_connected', () => { updatePiStatus(true); });
+socket.on('pi_disconnected', () => { updatePiStatus(false); });
 
 function updatePiStatus(connected) {
   const dot = document.getElementById('pi-status-dot');
@@ -716,12 +886,8 @@ function updatePiStatus(connected) {
   if (label) label.textContent = connected ? 'Pi LED Board: CONNECTED' : 'Pi LED Board: OFFLINE';
 }
 
-document.getElementById('led-test-btn')?.addEventListener('click', () => {
-  socket.emit('admin_led_test');
-});
-document.getElementById('led-off-btn')?.addEventListener('click', () => {
-  socket.emit('admin_led_all_off');
-});
+document.getElementById('led-test-btn')?.addEventListener('click', () => { socket.emit('admin_led_test'); });
+document.getElementById('led-off-btn')?.addEventListener('click', () => { socket.emit('admin_led_all_off'); });
 document.getElementById('led-brightness')?.addEventListener('input', e => {
   socket.emit('admin_led_brightness', { brightness: parseInt(e.target.value) });
 });
@@ -742,13 +908,9 @@ function renderLedConstellationGrid() {
     </div>
   `).join('');
 
-  // Attach handlers
   grid.querySelectorAll('.led-const-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      socket.emit('admin_led_constellation', {
-        constellation: btn.dataset.constellation,
-        mode: btn.dataset.mode,
-      });
+      socket.emit('admin_led_constellation', { constellation: btn.dataset.constellation, mode: btn.dataset.mode });
     });
   });
 }

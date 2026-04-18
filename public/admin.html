@@ -6,52 +6,15 @@
   <title>CLAWS Formal — Admin</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Admin-only layout overrides */
     html, body { overflow: hidden; }
     .admin-app { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
-
-    .admin-dashboard {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .admin-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      padding: 16px;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .admin-col {
-      height: 100%;
-      overflow-y: auto;
-    }
-
-    .guest-panel {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .guest-list {
-      flex: 1;
-      overflow-y: auto;
-      max-height: none;
-    }
-
-    .vote-form input[type="text"],
-    .vote-form input[type="number"] {
-      width: 100%;
-    }
-
-    .admin-tab-content {
-      flex: 1;
-      overflow-y: auto;
-    }
+    .admin-dashboard { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .admin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 16px; height: 100%; overflow: hidden; }
+    .admin-col { height: 100%; overflow-y: auto; }
+    .guest-panel { height: 100%; display: flex; flex-direction: column; }
+    .guest-list { flex: 1; overflow-y: auto; max-height: none; }
+    .vote-form input[type="text"], .vote-form input[type="number"] { width: 100%; }
+    .admin-tab-content { flex: 1; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -144,8 +107,26 @@
             </div>
           </div>
 
-          <!-- Col 2: Voting -->
+          <!-- Col 2: Awards + Voting -->
           <div class="admin-col">
+
+            <!-- Preset Awards -->
+            <div class="admin-panel" id="panel-preset-awards">
+              <div class="panel-title">Preset Awards</div>
+              <div class="panel-subtitle" style="margin-bottom:10px;font-size:12px;color:var(--text-muted)">These awards are pre-decided. Enter the winner's name and reveal live.</div>
+              <div id="preset-awards-list"></div>
+            </div>
+
+            <!-- Superlative Winners -->
+            <div class="admin-panel" id="panel-superlative-reveals">
+              <div class="panel-title">Superlative Winners</div>
+              <div class="panel-subtitle" style="margin-bottom:10px;font-size:12px;color:var(--text-muted)">Tallied superlatives — reveal to guests when ready.</div>
+              <div id="superlative-reveal-list">
+                <div class="empty-state">No superlatives tallied yet</div>
+              </div>
+            </div>
+
+            <!-- Create Vote -->
             <div class="admin-panel" id="panel-create-vote">
               <div class="panel-title">Create Vote</div>
               <div class="vote-form">
@@ -163,29 +144,7 @@
               </div>
             </div>
 
-            <div class="admin-panel" id="panel-active-vote" hidden>
-              <div class="panel-title">
-                Active Vote
-                <span class="vote-status-badge" id="vote-status-badge">OPEN</span>
-              </div>
-              <div class="active-vote-info">
-                <div class="active-vote-title" id="active-vote-title"></div>
-                <div class="active-vote-team" id="active-vote-team"></div>
-              </div>
-              <div class="vote-progress">
-                <div class="vote-progress-text">
-                  <span id="vote-count">0</span> / <span id="guest-count">0</span> votes
-                </div>
-                <div class="vote-progress-bar">
-                  <div class="vote-progress-fill" id="vote-progress-fill"></div>
-                </div>
-              </div>
-              <div class="vote-live-results" id="vote-live-results"></div>
-              <div class="vote-actions">
-                <button class="btn btn--danger btn--sm" id="close-vote-btn">■ Close Voting</button>
-                <button class="btn btn--primary btn--sm" id="reveal-winner-btn" hidden>★ Reveal Winner</button>
-              </div>
-            </div>
+            <div id="active-votes-container"></div>
 
             <div class="admin-panel" id="panel-vote-history">
               <div class="panel-title">Vote History</div>
@@ -227,9 +186,7 @@
                 <input type="range" id="led-brightness" min="0" max="255" value="100" style="width:100%;margin-top:6px;accent-color:var(--accent)">
               </div>
               <div class="panel-subtitle" style="margin-bottom:8px">Constellations</div>
-              <div class="led-constellation-grid" id="led-constellation-grid">
-                <!-- Dynamically populated from constellations data -->
-              </div>
+              <div class="led-constellation-grid" id="led-constellation-grid"></div>
             </div>
           </div>
 
