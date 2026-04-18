@@ -77,6 +77,28 @@ window.MidnightRules = (function () {
   // ─── One-word normaliser ───────────────────────────────────────────────────
   function normWord(s) { return s ? String(s).toLowerCase().trim() : ''; }
 
+  // ─── Favorite-work keyword extractor ──────────────────────────────────────
+  const STOPWORDS = new Set([
+    'the','a','an','and','or','of','in','for','to','with','at','on','my','our',
+    'i','we','it','this','that','was','is','are','been','as','by','from','up',
+    'its','their','all','just','some','one','had','has','have','but','not','so',
+    'me','us','him','her','they','do','did','get','got','can','our','into','more',
+  ]);
+  function extractKeywords(text) {
+    if (!text) return new Set();
+    return new Set(
+      String(text).toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !STOPWORDS.has(w))
+    );
+  }
+  function sharedKeywords(a, b) {
+    const kA = extractKeywords(a);
+    const kB = extractKeywords(b);
+    return [...kA].filter(k => kB.has(k));
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // PAIR EVALUATION
   // ══════════════════════════════════════════════════════════════════════════
@@ -203,14 +225,42 @@ window.MidnightRules = (function () {
       });
     }
 
-    // ── 11. Same constellation / sub-team bond ─────────────────────────────
+    // ── 11. Shared favorite work (keyword overlap) ────────────────────────
+    const workOverlap = sharedKeywords(cardA.favoriteWork, cardB.favoriteWork);
+    if (workOverlap.length > 0) {
+      const keyword = workOverlap[0].charAt(0).toUpperCase() + workOverlap[0].slice(1);
+      results.push({
+        rule: 'SHARED_FAVORITE_WORK', strength: 'upgrade',
+        label: 'Shared Work',
+        text: `You both named "${keyword}" as part of your best work this year.`,
+      });
+    }
+
+    // ── 12. Same role ──────────────────────────────────────────────────────
+    if (cardA.role && cardB.role && cardA.role === cardB.role && !sameSymbol) {
+      results.push({
+        rule: 'SHARED_ROLE', strength: 'low',
+        label: `Fellow ${cardA.role}`,
+        text: `Two ${cardA.role}s from different teams — same craft, different sky.`,
+      });
+    }
+
+    // ── 13. Same project style ─────────────────────────────────────────────
+    if (cardA.projectStyle && cardB.projectStyle && cardA.projectStyle === cardB.projectStyle) {
+      results.push({
+        rule: 'SHARED_PROJECT_STYLE', strength: 'low',
+        label: 'Same Approach',
+        text: `Both prefer to "${cardA.projectStyle}" — you'd probably work well together.`,
+      });
+    }
+
+    // ── 15. Same constellation / sub-team bond ─────────────────────────────
     if (sameSymbol) {
       results.push({
         rule: 'SAME_CONSTELLATION', strength: 'low',
         label: 'Constellation Bond',
         text: `Both ${cardA.symbol} — teammates recognize each other across the night.`,
       });
-      // Internal tension: same team, opposite direction
       if (isOpposite(cardA.direction, cardB.direction)) {
         results.push({
           rule: 'CONSTELLATION_TENSION', strength: 'upgrade',
@@ -220,7 +270,7 @@ window.MidnightRules = (function () {
       }
     }
 
-    // ── 12. Nomination match ───────────────────────────────────────────────
+    // ── 16. Nomination match ───────────────────────────────────────────────
     const noms = nominationMatches(cardA, cardB);
     const catLabels = {
       mvp: 'MVP', trust: 'TRUST', gemini: 'GEMINI',

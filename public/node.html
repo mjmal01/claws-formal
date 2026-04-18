@@ -446,15 +446,69 @@
         </div>
       </div>
 
+      <!-- Timecapsule tracker (only for your own table) -->
+      ${myId === targetId ? `<div id="timecapsule-section"></div>` : ''}
+
       <!-- Tap prompt -->
       <div class="tap-prompt">
         <div class="tap-prompt-icon">◈</div>
         <div class="tap-prompt-text">
-          <strong>Tap any other card</strong> to unlock the interaction between you.<br>
-          Start with your table neighbors above.
+          <strong>Tap any other card</strong> to unlock the connection between you.<br>
+          Find every anchor at your table to unlock your timecapsule.
         </div>
       </div>
     `;
+
+    // ── Timecapsule tracker ───────────────────────────────────────────
+    const TC_KEY = `tc_${card.table}`;
+
+    function getCollected() {
+      try { return JSON.parse(localStorage.getItem(TC_KEY) || '[]'); } catch { return []; }
+    }
+
+    function collectClue(leader) {
+      if (!leader.clueWord) return;
+      const collected = getCollected();
+      if (!collected.find(c => c.id === leader.id)) {
+        collected.push({ id: leader.id, word: leader.clueWord, name: leader.name, number: leader.number });
+        try { localStorage.setItem(TC_KEY, JSON.stringify(collected)); } catch {}
+      }
+      renderTimecapsule();
+    }
+
+    function renderTimecapsule() {
+      const el = document.getElementById('timecapsule-section');
+      if (!el) return;
+
+      const tableLeaders = Object.values(byId).filter(c => c.table === card.table && c.leader && c.clueWord);
+      const collected    = getCollected();
+      const total        = tableLeaders.length;
+      const found        = tableLeaders.filter(l => collected.find(c => c.id === l.id));
+      const unlocked     = found.length === total;
+
+      // Assemble phrase in seat-number order
+      const phrase = [...tableLeaders]
+        .sort((a, b) => a.number - b.number)
+        .map(l => {
+          const c = collected.find(x => x.id === l.id);
+          return c ? `<span style="color:var(--gold);font-weight:700">${c.word}</span>` : `<span style="opacity:0.25">_____</span>`;
+        }).join(' ');
+
+      el.innerHTML = `
+        <div class="section" style="border-color:${unlocked ? 'rgba(255,196,80,0.4)' : 'var(--border)'};background:${unlocked ? 'rgba(255,196,80,0.06)' : 'var(--surface)'};margin-bottom:8px">
+          <div class="section-label" style="color:${unlocked ? 'var(--gold)' : 'var(--text-muted)'}">
+            ${unlocked ? '✦ TIMECAPSULE UNLOCKED' : `◉ TABLE TIMECAPSULE · ${found.length}/${total} anchors found`}
+          </div>
+          <div style="font-size:18px;letter-spacing:0.06em;margin:10px 0 6px;font-family:var(--font-mono)">
+            ${phrase}
+          </div>
+          ${!unlocked ? `<div style="font-size:11px;color:var(--text-muted)">Scan each anchor's card at your table to reveal the phrase.</div>` : ''}
+          ${unlocked ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Your table's phrase is complete. This is your key.</div>` : ''}
+        </div>
+      `;
+    }
+
+    if (myId === targetId) renderTimecapsule();
 
     // ── Register with backend (lights up map) ─────────────────────────
     try {
@@ -469,47 +523,69 @@
     const overlay = document.getElementById('compare-overlay');
     const body    = document.getElementById('compare-body');
 
+    // Signal categories: which rules are "human" (CSV-driven) vs positional
+    const CSV_RULES = new Set(['SHARED_ATTITUDE','SAME_ONEWORD','SHARED_FAVORITE_WORK','SHARED_ROLE','SHARED_PROJECT_STYLE','NOMINATION_MATCH','PLUS_ONE_BOND']);
+    const POS_RULES = new Set(['OPPOSITE_DIRECTION','SAME_DIRECTION','ADJACENT_DIRECTION','SAME_NUMBER_DIFF_TABLE','SAME_NUM_DIFF_TABLE_OPPOSITE','SAME_NUM_DIFF_TABLE_SAME_DIR','SAME_NUM_DIFF_TABLE_ADJACENT','DIRECT_NEIGHBOR','SAME_CONSTELLATION','CONSTELLATION_TENSION']);
+
     window.openCompare = async function(otherId) {
       const other = byId[otherId];
       if (!other) return;
 
       const myCard = byId[myId] || card;
       const result = MidnightRules.evaluate(myCard, other, connections);
-
       const otherMeta  = consts[other.constellation] || {};
       const otherColor = otherMeta.color || '#6c8ef5';
 
-      const polarisNote = (myCard.leader || other.leader)
-        ? `${myCard.leader && other.leader
-            ? `${myCard.name} and ${other.name} are both table anchors. A rare dual-anchor contact.`
-            : `${(myCard.leader ? myCard : other).name} is a table anchor — this interaction is amplified.`}`
-        : null;
+      // Split rules into human signals vs positional signals
+      const humanRules = result.rules.filter(r => CSV_RULES.has(r.rule));
+      const posRules   = result.rules.filter(r => !CSV_RULES.has(r.rule) && r.rule !== 'DUAL_ANCHOR' && r.rule !== 'ANCHOR_CONTACT');
+      const anchorRule = result.rules.find(r => r.rule === 'DUAL_ANCHOR' || r.rule === 'ANCHOR_CONTACT');
+
+      // If other is a leader with a clue word, collect it
+      if (other.leader && other.clueWord && myId === targetId && other.table === card.table) {
+        collectClue(other);
+      }
+
+      // Build clue word reveal for same-table leaders
+      const showClue = other.leader && other.clueWord && other.table === card.table;
 
       body.innerHTML = `
         <div class="compare-header">
           <div class="compare-strength-badge ${result.strength}">${result.headline}</div>
           <div class="compare-headline">${myCard.name} × ${other.name}</div>
-          <div class="compare-names">${myCard.symbol||myCard.constellation} · Node ${myCard.number} meets ${other.symbol||other.constellation} · Node ${other.number}</div>
+          <div class="compare-names" style="color:${otherColor}">${other.symbol||other.constellation} · ${otherMeta.fullName||other.constellation} · Node ${String(other.number).padStart(2,'0')} · ${other.direction}</div>
         </div>
 
-        ${polarisNote ? `<div class="compare-polaris-note visible">◉ ${polarisNote}</div>` : ''}
+        ${anchorRule ? `
+        <div style="padding:10px 14px;background:rgba(255,196,80,0.08);border:1px solid rgba(255,196,80,0.3);border-radius:10px;margin-bottom:14px;font-size:13px;color:var(--gold)">
+          ◉ ${anchorRule.text}
+        </div>` : ''}
+
+        ${showClue ? `
+        <div style="padding:16px;background:rgba(255,196,80,0.06);border:1px solid rgba(255,196,80,0.35);border-radius:12px;margin-bottom:14px;text-align:center">
+          <div style="font-size:10px;letter-spacing:0.25em;color:var(--gold);margin-bottom:8px;font-family:var(--font-mono)">◉ ANCHOR FRAGMENT COLLECTED</div>
+          <div style="font-size:28px;font-weight:700;letter-spacing:0.1em;color:var(--gold);font-family:var(--font-mono)">${other.clueWord}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Added to your table's timecapsule.</div>
+        </div>` : ''}
 
         <div class="compare-person">
-          <div class="compare-person-name">${other.name}${other.leader?' <span style="color:var(--gold)">◉</span>':''}</div>
-          <span class="compare-person-tag">${other.symbol||other.constellation} · ${(otherMeta.fullName||other.constellation)}</span>
-          <div class="compare-person-stats">
-            ${other.oneWord  ? `<div class="cps"><div class="cps-label">Approach</div><div class="cps-val">${other.oneWord}</div></div>` : ''}
-            ${other.role     ? `<div class="cps"><div class="cps-label">Role</div><div class="cps-val">${other.role}</div></div>` : ''}
-            ${other.attitude ? `<div class="cps"><div class="cps-label">Energy</div><div class="cps-val" style="font-size:12px">${other.attitude}</div></div>` : ''}
+          <div class="compare-person-name">${other.name}${other.leader?` <span style="color:var(--gold);font-size:14px">◉</span>`:''}
           </div>
-          ${other.favoriteWork ? `<div style="font-size:12px;color:var(--text-muted);margin-top:8px">Best work: <span style="color:var(--text)">${other.favoriteWork}</span></div>` : ''}
-          ${other.plusOneOf ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">+1 of ${other.plusOneOf}</div>` : ''}
+          <span class="compare-person-tag">${other.symbol||other.constellation} · ${otherMeta.fullName||other.constellation}</span>
+          <div class="compare-person-stats">
+            ${other.oneWord      ? `<div class="cps"><div class="cps-label">One word</div><div class="cps-val">${other.oneWord}</div></div>` : ''}
+            ${other.role         ? `<div class="cps"><div class="cps-label">Role</div><div class="cps-val">${other.role}</div></div>` : ''}
+            ${other.attitude     ? `<div class="cps"><div class="cps-label">Energy</div><div class="cps-val" style="font-size:11px">${other.attitude}</div></div>` : ''}
+            ${other.projectStyle ? `<div class="cps"><div class="cps-label">Works by</div><div class="cps-val" style="font-size:11px">${other.projectStyle}</div></div>` : ''}
+          </div>
+          ${other.favoriteWork ? `<div style="font-size:12px;color:var(--text-muted);margin-top:10px">Best this year: <span style="color:var(--text)">${other.favoriteWork}</span></div>` : ''}
+          ${other.plusOneOf    ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">+1 of ${other.plusOneOf}</div>` : ''}
         </div>
 
-        ${result.rules.length ? `
-        <div class="section-label" style="margin-bottom:8px">Interaction signals</div>
+        ${humanRules.length ? `
+        <div class="section-label" style="margin:12px 0 8px">You have in common</div>
         <div class="rule-list">
-          ${result.rules.map(r => `
+          ${humanRules.map(r => `
             <div class="rule-item">
               <span class="rule-dot ${r.strength}"></span>
               <div>
@@ -519,9 +595,22 @@
             </div>`).join('')}
         </div>` : ''}
 
+        ${posRules.length ? `
+        <div class="section-label" style="margin:12px 0 8px;opacity:0.6">Constellation signals</div>
+        <div class="rule-list">
+          ${posRules.map(r => `
+            <div class="rule-item" style="opacity:0.75">
+              <span class="rule-dot ${r.strength}"></span>
+              <div>
+                <div class="rule-label">${r.label}</div>
+                <div class="rule-text">${r.text}</div>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+
         ${result.isDirectNeighbor ? `
-        <div class="section" style="background:rgba(108,142,245,0.06);border-color:var(--border-bright);margin-bottom:14px">
-          <div style="font-size:13px;color:var(--accent)">◈ You are seated directly next to ${other.name} tonight.</div>
+        <div style="padding:10px 14px;background:rgba(108,142,245,0.06);border:1px solid var(--border-bright);border-radius:10px;margin:12px 0;font-size:13px;color:var(--accent)">
+          ◈ You are seated directly next to ${other.name} tonight.
         </div>` : ''}
 
         <button class="compare-close" onclick="closeCompare()">Close</button>
