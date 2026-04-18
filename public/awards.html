@@ -92,29 +92,57 @@
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script>
   (function () {
-    const cfg = window.MIDNIGHT_ECLIPSE_CONFIG || {};
+    const cfg    = window.MIDNIGHT_ECLIPSE_CONFIG || {};
     const banner = document.getElementById('live-banner');
-    const txt = document.getElementById('live-text');
-    const mount = document.getElementById('live-voting-mount');
+    const txt    = document.getElementById('live-text');
+    const mount  = document.getElementById('live-voting-mount');
 
+    // ── State ──────────────────────────────────────────────────────────────
+    let activeRounds      = {};
+    let myVotes           = {};
+    let presetAwards      = loadFromSession('claws_preset_awards',      []);
+    let superlativeAwards = loadFromSession('claws_superlative_awards', []);
+
+    function loadFromSession(key, fallback) {
+      try { return JSON.parse(sessionStorage.getItem(key) || 'null') || fallback; } catch { return fallback; }
+    }
+    function saveSession(key, val) {
+      try { sessionStorage.setItem(key, JSON.stringify(val)); } catch {}
+    }
+    function saveAll() {
+      saveSession('claws_active_rounds',      activeRounds);
+      saveSession('claws_my_votes',           myVotes);
+      saveSession('claws_preset_awards',      presetAwards);
+      saveSession('claws_superlative_awards', superlativeAwards);
+    }
+
+    activeRounds = loadFromSession('claws_active_rounds', {});
+    myVotes      = loadFromSession('claws_my_votes',      {});
+
+    // ── Socket ─────────────────────────────────────────────────────────────
     let socket;
     try {
       socket = io(cfg.BACKEND_URL || undefined, { transports: ['websocket', 'polling'] });
     } catch (e) {
       txt.textContent = 'Live voting unavailable — backend offline.';
+      renderAll();
       return;
     }
 
-    const cardId = (function () {
-      try { return localStorage.getItem('me_card_id'); } catch { return null; }
+    // Identity — check both storage keys (guest.js uses claws_identity,
+    // nav.js NFC flow uses me_card_id)
+    const identity = (function () {
+      try { return JSON.parse(localStorage.getItem('claws_identity') || 'null'); } catch { return null; }
     })();
-    const name = (function () {
-      try { return localStorage.getItem('me_name') || ''; } catch { return ''; }
-    })();
+    let cardId = identity?.cardId || null;
+    const name = identity?.name || '';
+    if (!cardId) {
+      try { cardId = localStorage.getItem('me_card_id'); } catch {}
+    }
 
     socket.on('connect', () => {
       banner.classList.remove('is-idle');
-      txt.textContent = 'Connected. Awaiting the next round...';
+      txt.textContent = 'Connected.';
       if (cardId || name) socket.emit('guest_join', { cardId, name });
     });
     socket.on('disconnect', () => {
@@ -122,78 +150,180 @@
       txt.textContent = 'Disconnected. Reconnecting...';
     });
 
-    let currentRound = null;
-    let myVote = null;
-
-    function render(round) {
-      currentRound = round;
-      if (!round) {
-        mount.innerHTML = '';
-        txt.textContent = 'No voting round is currently open.';
-        banner.classList.add('is-idle');
-        return;
+    socket.on('joined', (data) => {
+      // Server is authoritative — sync all state
+      activeRounds = {};
+      const rounds = data?.activeVotings || (data?.voting ? [data.voting] : []);
+      for (const r of rounds) {
+        if (r.status === 'open') {
+          activeRounds[r.id] = r;
+          if (r.myVote) myVotes[r.id] = r.myVote;
+        }
       }
-      banner.classList.remove('is-idle');
-      txt.textContent = `LIVE · ${round.title}`;
+      if (Array.isArray(data?.presetAwards))         presetAwards      = data.presetAwards;
+      if (Array.isArray(data?.revealedSuperlatives)) superlativeAwards = data.revealedSuperlatives;
+      saveAll();
+      renderAll();
+    });
 
-      const optsHtml = round.options.map(o => {
-        const chosen = myVote === o.id;
-        return `<button class="menu-item ${chosen ? 'is-chosen' : ''}" data-id="${o.id}"
-                        style="${chosen ? 'border-color:var(--accent);background:rgba(108,142,245,0.15)' : ''}">
-          <div>
-            <div class="menu-item-name">${o.name}</div>
-            ${o.cardId ? `<div class="menu-item-sub">${o.cardId}</div>` : ''}
-          </div>
-          <span class="menu-item-tag">${chosen ? 'VOTED' : 'TAP'}</span>
-        </button>`;
-      }).join('');
+    socket.on('voting_opened', (round) => {
+      activeRounds[round.id] = round;
+      saveAll();
+      renderAll();
+    });
 
-      mount.innerHTML = `
-        <section class="section">
-          <div class="section-label">${round.team || 'Live Round'}</div>
-          <div class="section-title">${round.title}</div>
-          ${round.description ? `<div class="section-body" style="margin-bottom:14px">${round.description}</div>` : ''}
-          <div class="menu-list">${optsHtml}</div>
-        </section>`;
+    socket.on('vote_accepted', ({ voteId, optionId }) => {
+      const id = voteId || Object.keys(activeRounds)[0];
+      if (id) myVotes[id] = optionId;
+      saveAll();
+      renderAll();
+    });
 
-      mount.querySelectorAll('[data-id]').forEach(btn => {
+    socket.on('voting_closed', (data) => {
+      const id = data?.voteId || Object.keys(activeRounds)[0];
+      if (id && activeRounds[id]) activeRounds[id].status = 'closed';
+      saveAll();
+      renderAll();
+    });
+
+    socket.on('award_result', (res) => {
+      delete activeRounds[res.id];
+      delete myVotes[res.id];
+      if (res.broadcastedAt && !superlativeAwards.find(a => a.id === res.id)) {
+        superlativeAwards.push({ ...res });
+      }
+      saveAll();
+      renderAll();
+    });
+
+    socket.on('award_unreveal', ({ voteId }) => {
+      superlativeAwards = superlativeAwards.filter(a => a.id !== voteId);
+      saveAll();
+      renderAll();
+    });
+
+    socket.on('preset_award_result', (res) => {
+      presetAwards = presetAwards.filter(a => a.awardKey !== res.awardKey);
+      presetAwards.push(res);
+      saveAll();
+      renderAll();
+    });
+
+    socket.on('preset_award_unreveal', ({ awardKey }) => {
+      presetAwards = presetAwards.filter(a => a.awardKey !== awardKey);
+      saveAll();
+      renderAll();
+    });
+
+    // ── Render ─────────────────────────────────────────────────────────────
+    function renderAll() {
+      const openCount = Object.values(activeRounds).filter(r => r.status === 'open').length;
+      if (openCount > 0) {
+        banner.classList.remove('is-idle');
+        txt.textContent = 'LIVE · ' + openCount + ' superlative' + (openCount > 1 ? 's' : '') + ' open';
+      } else if (Object.keys(activeRounds).length > 0) {
+        banner.classList.add('is-idle');
+        txt.textContent = 'Voting closed. Winners incoming...';
+      } else {
+        banner.classList.add('is-idle');
+        txt.textContent = (presetAwards.length + superlativeAwards.length) > 0
+          ? 'Awards are being announced tonight.'
+          : 'Voting will open during dinner.';
+      }
+
+      let html = '';
+
+      const rounds = Object.values(activeRounds);
+      if (rounds.length > 0) {
+        html += '<section class="section"><div class="section-label">Cast Your Votes</div>';
+        for (const r of rounds) html += renderRound(r);
+        html += '</section>';
+      }
+
+      if (presetAwards.length > 0) {
+        html += '<section class="section"><div class="section-label">CLAWS Award Winners</div>';
+        for (const a of presetAwards) html += renderReveal(a);
+        html += '</section>';
+      }
+
+      if (superlativeAwards.length > 0) {
+        html += '<section class="section"><div class="section-label">Superlative Winners</div>';
+        for (const a of superlativeAwards) html += renderReveal(a);
+        html += '</section>';
+      }
+
+      mount.innerHTML = html;
+
+      mount.querySelectorAll('[data-vote-id][data-opt-id]').forEach(btn => {
         btn.addEventListener('click', () => {
-          if (myVote) return;
-          const id = btn.getAttribute('data-id');
-          socket.emit('submit_vote', { optionId: id });
+          const voteId   = btn.dataset.voteId;
+          const optionId = btn.dataset.optId;
+          if (myVotes[voteId]) return;
+          socket.emit('submit_vote', { voteId, optionId });
         });
       });
     }
 
-    socket.on('joined', (data) => {
-      if (data?.voting) {
-        myVote = data.voting.myVote || null;
-        render(data.voting);
-      }
+    function renderRound(round) {
+      const voted  = myVotes[round.id];
+      const closed = round.status === 'closed';
+      const opts = round.options.map(o => {
+        const chosen = voted === o.id;
+        const style  = chosen ? 'border-color:var(--accent);background:rgba(108,142,245,0.18);' : '';
+        return '<button class="menu-item' + (chosen ? ' is-chosen' : '') + '"'
+          + ' data-vote-id="' + esc(round.id) + '"'
+          + ' data-opt-id="'  + esc(o.id)     + '"'
+          + (voted || closed ? ' disabled' : '')
+          + ' style="' + style + 'color:#fff">'
+          + '<div><div class="menu-item-name" style="color:#fff">' + esc(o.name) + '</div></div>'
+          + '<span class="menu-item-tag">' + (chosen ? 'VOTED ✓' : closed ? '—' : 'TAP') + '</span>'
+          + '</button>';
+      }).join('');
+
+      return '<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">'
+        + '<div class="section-title" style="margin-bottom:6px">' + esc(round.title) + '</div>'
+        + (round.team ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;letter-spacing:.05em">' + esc(round.team) + '</div>' : '')
+        + (round.description ? '<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">' + esc(round.description) + '</div>' : '')
+        + (closed && !voted ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Voting has closed.</div>' : '')
+        + '<div class="menu-list">' + opts + '</div></div>';
+    }
+
+    function renderReveal(award) {
+      const icon = award.awardIcon || '☆';
+      return '<div class="award-card" style="margin-bottom:12px">'
+        + '<div class="award-icon">' + esc(icon) + '</div>'
+        + '<div style="flex:1">'
+        + '<div class="award-name">' + esc(award.award) + '</div>'
+        + '<div style="font-size:22px;font-weight:700;color:var(--gold);margin:6px 0;text-shadow:0 0 16px rgba(255,215,0,0.35)">' + esc(award.winnerName) + '</div>'
+        + (award.team ? '<div style="font-size:12px;color:var(--text-muted)">' + esc(award.team) + '</div>' : '')
+        + '</div></div>';
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    renderAll();
+
+    // nav.js dispatches this event whenever it receives an award/voting update,
+    // triggering an immediate re-render even when we're already on this page.
+    window.addEventListener('awardsUpdated', function () {
+      presetAwards      = loadFromSession('claws_preset_awards',      []);
+      superlativeAwards = loadFromSession('claws_superlative_awards', []);
+      activeRounds      = loadFromSession('claws_active_rounds',      {});
+      myVotes           = loadFromSession('claws_my_votes',           {});
+      renderAll();
     });
-    socket.on('voting_opened', (round) => { myVote = null; render(round); });
-    socket.on('voting_closed', () => {
-      if (currentRound) {
-        txt.textContent = `Voting closed · ${currentRound.title}. Result incoming.`;
-      }
-    });
-    socket.on('vote_accepted', ({ optionId }) => {
-      myVote = optionId;
-      render(currentRound);
-    });
-    socket.on('award_result', (res) => {
-      mount.innerHTML = `
-        <section class="section" style="text-align:center">
-          <div class="section-label">${res.team || 'Result'}</div>
-          <div class="section-title" style="font-size:22px">${res.award}</div>
-          <div style="font-size:28px;font-weight:600;color:var(--gold);margin:14px 0">
-            ${res.winnerName}
-          </div>
-          <div class="section-body" style="font-size:12px;color:var(--text-muted)">${res.total} vote${res.total === 1 ? '' : 's'} cast</div>
-        </section>`;
-      banner.classList.add('is-idle');
-      txt.textContent = 'Round complete. Awaiting the next one...';
-      currentRound = null; myVote = null;
+
+    // Also re-sync when the user switches browser tabs back to this page
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) return;
+      presetAwards      = loadFromSession('claws_preset_awards',      []);
+      superlativeAwards = loadFromSession('claws_superlative_awards', []);
+      activeRounds      = loadFromSession('claws_active_rounds',      {});
+      myVotes           = loadFromSession('claws_my_votes',           {});
+      renderAll();
     });
   })();
   </script>
