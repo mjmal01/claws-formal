@@ -1,10 +1,35 @@
 // Shared bottom-nav + starfield + NFC card capture for all pages.
 (function () {
-  // ── NFC card capture: if the URL has ?card=... stash it for later pages ──
+  // ── NFC card capture ──────────────────────────────────────────────────────
+  // If the URL has ?card=... decide what to do:
+  //   • First tap (no identity stored yet)  → store as identity, go to node page
+  //   • Second tap (identity already known) → open comparison view
   const url = new URL(window.location.href);
   const paramCard = url.searchParams.get('card');
   if (paramCard) {
-    try { localStorage.setItem('me_card_id', paramCard); } catch (e) {}
+    let existingId = null;
+    try { existingId = localStorage.getItem('me_card_id'); } catch (e) {}
+
+    const onNodePage = window.location.pathname.includes('node.html');
+
+    if (!existingId) {
+      // First tap — store identity and redirect to node page
+      try { localStorage.setItem('me_card_id', paramCard); } catch (e) {}
+      if (!onNodePage) {
+        window.location.replace('node.html?id=' + paramCard);
+      }
+    } else if (existingId === paramCard) {
+      // Tapped own card — just go to your node page
+      if (!onNodePage) {
+        window.location.replace('node.html?id=' + paramCard);
+      }
+    } else {
+      // Second tap — comparison mode
+      if (!onNodePage) {
+        window.location.replace('node.html?id=' + existingId + '&scan=' + paramCard);
+      }
+      // If already on node.html, node.html's own script handles the scan param
+    }
   }
 
   // ── Starfield background ─────────────────────────────────────────────────

@@ -74,9 +74,10 @@ let state = {
   phaseStartTimes: {},      // phase → timestamp
 };
 
-// After loading clueDb, initialize clue states
+// After loading clueDb, initialize clue states (only array buckets)
 if (clueDb) {
   for (const bucket of Object.values(clueDb)) {
+    if (!Array.isArray(bucket)) continue;
     for (const clue of bucket) {
       state.clueStates[clue.id] = { unlocked: false, unlockedAt: null, unlockedBy: null };
     }
@@ -228,6 +229,23 @@ io.on('connection', (socket) => {
 
     socket.emit('joined', buildGuestState(socket.id));
     emitGuestsUpdated();
+
+    // Broadcast to ALL clients (including map) so nodes light up in real-time
+    if (cleanCard) {
+      const cardData = cardDb.find(c => c.id === cleanCard);
+      if (cardData) {
+        io.emit('card_online', {
+          cardId: cleanCard,
+          name: resolvedName,
+          constellation: cardData.constellation,
+          symbol: cardData.symbol,
+          table: cardData.table,
+          number: cardData.number,
+          direction: cardData.direction,
+          isPolaris: cardData.isPolaris,
+        });
+      }
+    }
 
     // Emit LED event for this card coming online
     if (cleanCard && ledMapDb.cards?.[cleanCard]) {
@@ -564,7 +582,7 @@ io.on('connection', (socket) => {
   // Admin: broadcast clue unlock
   socket.on('admin_broadcast_clue', ({ clueId, bucket }) => {
     if (!socket.rooms.has('admin')) return;
-    const clue = clueDb[bucket]?.find(c => c.id === clueId);
+    const clue = Array.isArray(clueDb[bucket]) ? clueDb[bucket].find(c => c.id === clueId) : null;
     if (!clue) return;
 
     state.clueStates[clueId] = { unlocked: true, unlockedAt: Date.now(), unlockedBy: 'admin' };
@@ -629,8 +647,12 @@ io.on('connection', (socket) => {
       io.to('admin').emit('pi_disconnected');
     }
     if (guests.has(socket.id)) {
+      const leaving = guests.get(socket.id);
       guests.delete(socket.id);
       emitGuestsUpdated();
+      if (leaving?.cardId) {
+        io.emit('card_offline', { cardId: leaving.cardId });
+      }
     }
   });
 });
@@ -704,6 +726,8 @@ function checkConstellationActivation(newCardId) {
 
 // ─── Static files ─────────────────────────────────────────────────────────────
 
+// Serve /data route from root data/ folder so browser pages can fetch JSON
+app.use('/data', express.static(path.join(__dirname, 'data')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/card/:id', (req, res) => {

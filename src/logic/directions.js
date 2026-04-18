@@ -1,13 +1,17 @@
 // Direction relationships
-const DIRECTIONS = ['N', 'E', 'S', 'W'];
+const DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
-const OPPOSITES = { N: 'S', S: 'N', E: 'W', W: 'E' };
+const OPPOSITES = { N: 'S', NE: 'SW', E: 'W', SE: 'NW', S: 'N', SW: 'NE', W: 'E', NW: 'SE' };
 
 const ADJACENT = {
-  N: ['E', 'W'],
-  E: ['N', 'S'],
-  S: ['E', 'W'],
-  W: ['N', 'S'],
+  N: ['NE', 'NW'],
+  NE: ['E', 'N'],
+  E: ['NE', 'SE'],
+  SE: ['E', 'S'],
+  S: ['SE', 'SW'],
+  SW: ['S', 'W'],
+  W: ['NW', 'SW'],
+  NW: ['W', 'N']
 };
 
 function isOpposite(a, b) { return OPPOSITES[a] === b; }

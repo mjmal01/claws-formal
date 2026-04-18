@@ -18,21 +18,21 @@ function evaluatePair(cardA, cardB) {
       rule: 'OPPOSITE_DIRECTION',
       strength: 'mid',
       description: 'Opposing bearings attract — polar tension detected.',
-      ledHint: 'PAIR_FLASH',
+      
     });
   } else if (isSame(cardA.direction, cardB.direction)) {
     results.push({
       rule: 'SAME_DIRECTION',
       strength: 'low',
       description: 'Aligned bearing — traveling the same vector.',
-      ledHint: 'PAIR_GLOW',
+     
     });
   } else if (isAdjacent(cardA.direction, cardB.direction)) {
     results.push({
       rule: 'ADJACENT_DIRECTION',
       strength: 'low',
       description: 'Adjacent currents — near-parallel paths.',
-      ledHint: 'PAIR_GLOW',
+     
     });
   }
 
@@ -88,31 +88,8 @@ function evaluatePair(cardA, cardB) {
     });
   }
 
-  // ─── CSV-DERIVED: NOMINATION MATCHES ───────────────────────────────────────
-  // If one card nominated the other in any award category, resonance fires.
-  const matches = nominationMatches(cardA, cardB);
-  for (const m of matches) {
-    results.push({
-      rule: 'NOMINATION_MATCH',
-      strength: m.category === 'polaris' ? 'rare' : 'upgrade',
-      description: `${m.nominator.name} named ${m.nominee.name} for the ${m.category.toUpperCase()} award — recognition echoes.`,
-      ledHint: m.category === 'polaris' ? 'RARE_BURST' : 'POLARIS_PULSE',
-      category: m.category,
-    });
-  }
+  
 
-  // ─── CSV-DERIVED: PLUS-ONE BOND ────────────────────────────────────────────
-  if (
-    (cardA.plusOneOf && namesMatch(cardA.plusOneOf, cardB.name)) ||
-    (cardB.plusOneOf && namesMatch(cardB.plusOneOf, cardA.name))
-  ) {
-    results.push({
-      rule: 'PLUS_ONE_BOND',
-      strength: 'rare',
-      description: 'A host and their +1 — paired orbits reunited.',
-      ledHint: 'RARE_BURST',
-    });
-  }
 
   // ─── CSV-DERIVED: SHARED ATTITUDE / ROLE FLAVOR ────────────────────────────
   if (cardA.attitude && cardB.attitude && cardA.attitude === cardB.attitude) {

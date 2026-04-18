@@ -1,203 +1,292 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#04040e">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Midnight Eclipse — CLAWS 2025</title>
+  <title>Tap Your Card — Midnight Eclipse</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    body.card-landing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100svh;
+      overflow: hidden;
+      padding-bottom: 0;
+    }
+
+    .tap-container {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px 28px;
+      max-width: 340px;
+      width: 100%;
+    }
+
+    .tap-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      opacity: 0.8;
+    }
+
+    /* Pulsing card icon */
+    .tap-ring-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 36px;
+    }
+    .tap-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      opacity: 0;
+      animation: ring-expand 2.4s ease-out infinite;
+    }
+    .tap-ring:nth-child(1) { inset: 0;    animation-delay: 0s; }
+    .tap-ring:nth-child(2) { inset: -20px; animation-delay: 0.6s; }
+    .tap-ring:nth-child(3) { inset: -40px; animation-delay: 1.2s; }
+    @keyframes ring-expand {
+      0%   { opacity: 0.7; transform: scale(0.85); }
+      100% { opacity: 0;   transform: scale(1.1); }
+    }
+    .tap-card-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border-radius: 50%;
+      border: 1px solid var(--border-bright);
+      box-shadow: 0 0 32px rgba(108, 142, 245, 0.25);
+    }
+    .tap-card-icon svg {
+      width: 56px;
+      height: 56px;
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 1.5;
+    }
+
+    .tap-title {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .tap-title span {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .tap-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 40px;
+    }
+
+    .tap-card-location {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border: 1px dashed var(--border-bright);
+      border-radius: var(--radius);
+      background: rgba(108, 142, 245, 0.06);
+      margin-bottom: 32px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .tap-card-location .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      animation: live-pulse 1.6s ease-in-out infinite;
+    }
+
+    .tap-divider {
+      width: 40px;
+      height: 1px;
+      background: var(--border);
+      margin: 0 auto 24px;
+    }
+
+    .tap-manual {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .tap-scan-btn {
+      display: inline-block;
+      padding: 12px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tap-scan-btn:hover { background: var(--surface-2); }
+
+    /* Already-identified state */
+    .identified-banner {
+      display: none;
+      padding: 14px 18px;
+      background: rgba(74, 222, 128, 0.08);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--success);
+      text-align: center;
+    }
+    .identified-banner.visible { display: block; }
+  </style>
 </head>
-<body>
-  <div class="app">
-    <div class="stars" id="stars"></div>
+<body class="page card-landing">
+  <div class="stars" id="stars"></div>
 
-    <!-- Join Screen -->
-    <div class="screen" id="screen-join">
-      <div class="join-container">
-        <!-- Default state: manual entry -->
-        <div id="join-default">
-          <div class="join-logo">MIDNIGHT ECLIPSE</div>
-          <h1 class="join-heading">Welcome to<br><span class="glow-text">the Eclipse</span></h1>
-          <form id="join-form">
-            <input type="text" id="name-input" class="name-input" placeholder="Your name"
-              autocomplete="off" autocapitalize="words" spellcheck="false" required>
-            <input type="hidden" id="card-id-input">
-            <button type="submit" class="btn btn--primary">Enter →</button>
-          </form>
-        </div>
-        <!-- Card detected state: show card info + confirm -->
-        <div id="join-card-reveal" hidden>
-          <div class="card-reveal-constellation" id="reveal-constellation"></div>
-          <div class="card-reveal-symbol" id="reveal-symbol"></div>
-          <div class="card-reveal-name" id="reveal-name"></div>
-          <div class="card-reveal-title" id="reveal-title"></div>
-          <div class="card-reveal-attrs">
-            <div class="card-reveal-attr"><span>BEARING</span><strong id="reveal-direction"></strong></div>
-            <div class="card-reveal-attr"><span>NODE</span><strong id="reveal-number"></strong></div>
-          </div>
-          <div class="card-reveal-polaris" id="reveal-polaris" hidden>◉ POLARIS NODE</div>
-          <button class="btn btn--primary" id="reveal-confirm-btn">Enter as <span id="reveal-confirm-name"></span> →</button>
-        </div>
+  <div class="tap-container">
+    <div class="tap-eyebrow">Midnight Eclipse · CLAWS 2026</div>
+
+    <div class="identified-banner" id="identified-banner"></div>
+
+    <div class="tap-ring-wrap">
+      <div class="tap-ring"></div>
+      <div class="tap-ring"></div>
+      <div class="tap-ring"></div>
+      <div class="tap-card-icon">
+        <!-- NFC / card icon -->
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="12" width="36" height="24" rx="4"/>
+          <path d="M6 20h36"/>
+          <circle cx="14" cy="32" r="2" fill="var(--accent)" stroke="none"/>
+          <path d="M20 32h12" stroke-linecap="round"/>
+          <!-- wifi-style arcs for NFC -->
+          <path d="M30 26 a6 6 0 0 1 0 12" opacity="0.5" stroke-linecap="round"/>
+          <path d="M27 29 a3 3 0 0 1 0 6"  opacity="0.8" stroke-linecap="round"/>
+        </svg>
       </div>
     </div>
 
-    <!-- NFC Interaction Scan Screen (shown when already logged in + scanning another card) -->
-    <div class="screen" id="screen-scanning" hidden>
-      <div class="scanning-container">
-        <div class="scanning-pulse"></div>
-        <div class="scanning-label">SCANNING NODE</div>
-        <div class="scanning-name" id="scanning-name"></div>
-        <div class="scanning-constellation" id="scanning-constellation"></div>
-        <div class="scanning-sub">Registering interaction...</div>
-      </div>
+    <h1 class="tap-title">Tap your device<br>to <span>your card</span></h1>
+
+    <p class="tap-sub">
+      Each place setting has a physical NFC card.<br>
+      Hold your phone to it to unlock your constellation node.
+    </p>
+
+    <div class="tap-card-location">
+      <span class="dot"></span>
+      Your card is at your place setting on the table.
     </div>
 
-    <!-- Main Screen -->
-    <div class="screen" id="screen-main" hidden>
-      <div class="guest-header">
-        <div class="guest-name-display" id="guest-name-display"></div>
-        <div class="badge" id="phase-badge" data-phase="LOBBY">LOBBY</div>
+    <div class="tap-divider"></div>
+
+    <p class="tap-manual">Can't find your card? Enter your name instead:</p>
+    <button class="tap-scan-btn" id="manual-btn">Find my card →</button>
+  </div>
+
+  <!-- Manual lookup modal -->
+  <div class="overlay" id="overlay-manual" hidden>
+    <div class="voting-container" style="max-width:360px">
+      <div class="voting-label">FIND YOUR NODE</div>
+      <div style="margin:16px 0">
+        <input type="text" id="manual-name" class="name-input"
+               placeholder="Your first name" autocomplete="off"
+               autocapitalize="words" spellcheck="false">
       </div>
-
-      <!-- Card Identity Panel -->
-      <div class="card-identity" id="card-identity" hidden>
-        <div class="card-constellation" id="card-constellation-name"></div>
-        <div class="card-title-text" id="card-title-text"></div>
-        <div class="card-attrs">
-          <div class="card-attr">
-            <span class="card-attr-label">SYMBOL</span>
-            <span class="card-attr-value" id="card-symbol"></span>
-          </div>
-          <div class="card-attr">
-            <span class="card-attr-label">BEARING</span>
-            <span class="card-attr-value" id="card-direction"></span>
-          </div>
-          <div class="card-attr">
-            <span class="card-attr-label">NODE</span>
-            <span class="card-attr-value" id="card-number"></span>
-          </div>
-        </div>
-        <div class="card-polaris-badge" id="card-polaris-badge" hidden>◉ POLARIS NODE</div>
-      </div>
-
-      <!-- Rules Panel (collapsible) -->
-      <div class="rules-panel" id="rules-panel" hidden>
-        <button class="rules-toggle" id="rules-toggle" aria-expanded="false">
-          YOUR INTERACTION RULES <span class="rules-arrow">▾</span>
-        </button>
-        <div class="rules-body" id="rules-body" hidden></div>
-      </div>
-
-      <div class="guest-content">
-        <div class="phase-content" id="phase-content"></div>
-
-        <!-- Dinner menu block (static, visible on the card page) -->
-        <div class="section" style="margin-top:20px">
-          <div class="section-label">Tonight's Menu</div>
-          <div class="menu-list">
-            <div class="menu-item">
-              <div>
-                <div class="menu-item-name">Chicken Florentine</div>
-                <div class="menu-item-sub">Spinach, cream, lemon</div>
-              </div>
-              <span class="menu-item-tag">ENTRÉE</span>
-            </div>
-            <div class="menu-item">
-              <div>
-                <div class="menu-item-name">Pan Seared Salmon</div>
-                <div class="menu-item-sub">Herb butter, seasonal veg</div>
-              </div>
-              <span class="menu-item-tag">ENTRÉE</span>
-            </div>
-            <div class="menu-item">
-              <div>
-                <div class="menu-item-name">Chef's Seasonal Pasta</div>
-                <div class="menu-item-sub">Vegetarian</div>
-              </div>
-              <span class="menu-item-tag">V</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="broadcast-banner" id="broadcast-banner" hidden></div>
-      <div class="connection-status" id="connection-status">Reconnecting...</div>
-    </div>
-
-    <!-- Voting Overlay -->
-    <div class="overlay" id="overlay-voting" hidden>
-      <div class="voting-container">
-        <div class="voting-label">VOTING ACTIVE</div>
-        <div class="voting-team" id="voting-team"></div>
-        <div class="voting-title" id="voting-title"></div>
-        <div class="voting-description" id="voting-description"></div>
-        <div class="voting-timer">
-          <div class="timer-bar-wrap">
-            <div class="timer-bar" id="timer-bar"></div>
-          </div>
-          <div class="timer-text" id="timer-text"></div>
-        </div>
-        <div class="voting-options" id="voting-options"></div>
-        <div class="voting-footer">Tap to cast your vote</div>
-      </div>
-    </div>
-
-    <!-- Pending Overlay -->
-    <div class="overlay" id="overlay-pending" hidden>
-      <div class="pending-container">
-        <div class="pending-check">✓</div>
-        <div class="pending-title">VOTE RECEIVED</div>
-        <div class="pending-sub">Awaiting result...</div>
-        <div class="pending-pulse"></div>
-      </div>
-    </div>
-
-    <!-- Result Overlay -->
-    <div class="overlay" id="overlay-result" hidden>
-      <div class="result-container" id="result-container"></div>
-    </div>
-
-    <!-- Clue Unlock Notification -->
-    <div class="clue-notification" id="clue-notification" hidden>
-      <div class="clue-notification-label">CLUE UNLOCKED</div>
-      <div class="clue-notification-text" id="clue-notification-text"></div>
-    </div>
-
-    <!-- Interaction Result Overlay -->
-    <div class="overlay" id="overlay-interaction" hidden>
-      <div class="interaction-container" id="interaction-container"></div>
-    </div>
-
-    <!-- Terminal Overlay (Afterparty) -->
-    <div class="overlay" id="overlay-terminal" hidden>
-      <div class="terminal-container">
-        <div class="terminal-header">
-          <div class="terminal-label">// MIDNIGHT ECLIPSE TERMINAL</div>
-          <div class="terminal-sub">Enter constellation → bearing alignments</div>
-        </div>
-        <div class="terminal-body" id="terminal-body">
-          <div class="terminal-lines" id="terminal-lines"></div>
-          <div class="terminal-input-row">
-            <span class="terminal-prompt">▶</span>
-            <input type="text" id="terminal-input" class="terminal-input-field" placeholder="IRIS:N VEGA:E ATLAS:W ..." autocomplete="off" autocapitalize="characters" spellcheck="false">
-            <button class="terminal-submit-btn" id="terminal-submit">SUBMIT</button>
-          </div>
-        </div>
-        <div class="terminal-solved-screen" id="terminal-solved-screen" hidden>
-          <div class="terminal-solved-title">POLARIS ACQUIRED</div>
-          <div class="terminal-solved-sub">ALL CONSTELLATIONS ALIGNED</div>
-          <div class="terminal-solved-msg">MIDNIGHT ECLIPSE COMPLETE</div>
-        </div>
-      </div>
+      <div id="manual-results" style="max-height:240px;overflow-y:auto"></div>
+      <button class="btn btn--primary" id="manual-search-btn" style="margin-top:12px">Search</button>
     </div>
   </div>
 
-  <nav class="bottom-nav" id="bottom-nav"></nav>
-
   <script src="js/config.js"></script>
   <script src="js/nav.js"></script>
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-  <script src="js/guest.js"></script>
+  <script>
+  (async function () {
+    // If this page was loaded with ?card=, nav.js already stored it → redirect to node page
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('card')) {
+      window.location.replace('node.html?id=' + url.searchParams.get('card'));
+      return;
+    }
+
+    // Show who this device is identified as (if known)
+    const myId = (() => { try { return localStorage.getItem('me_card_id'); } catch { return null; } })();
+    if (myId) {
+      try {
+        const cards = await fetch('data/cards.json').then(r => r.json());
+        const me = cards.find(c => c.id === myId);
+        if (me) {
+          const b = document.getElementById('identified-banner');
+          b.textContent = `This device is identified as ${me.name} · ${me.symbol || me.constellation}`;
+          b.classList.add('visible');
+        }
+      } catch (e) {}
+    }
+
+    // Manual lookup
+    let allCards = [];
+    try { allCards = await fetch('data/cards.json').then(r => r.json()); } catch (e) {}
+
+    document.getElementById('manual-btn').addEventListener('click', () => {
+      document.getElementById('overlay-manual').hidden = false;
+      document.getElementById('manual-name').focus();
+    });
+
+    document.getElementById('overlay-manual').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('overlay-manual')) {
+        document.getElementById('overlay-manual').hidden = true;
+      }
+    });
+
+    function doSearch() {
+      const q = document.getElementById('manual-name').value.trim().toLowerCase();
+      if (!q) return;
+      const matches = allCards.filter(c => c.name.toLowerCase().includes(q));
+      const el = document.getElementById('manual-results');
+      if (!matches.length) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px">No match found.</div>';
+        return;
+      }
+      el.innerHTML = matches.map(c => `
+        <button onclick="selectCard('${c.id}')"
+          style="width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);
+                 border-radius:8px;padding:12px;margin-bottom:8px;color:var(--text);cursor:pointer">
+          <div style="font-weight:600">${c.name}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${c.symbol || c.constellation} · Node ${c.number} · ${c.direction}</div>
+        </button>`).join('');
+    }
+
+    window.selectCard = function(id) {
+      try { localStorage.setItem('me_card_id', id); } catch(e) {}
+      window.location.href = 'node.html?id=' + id;
+    };
+
+    document.getElementById('manual-search-btn').addEventListener('click', doSearch);
+    document.getElementById('manual-name').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+  })();
+  </script>
 </body>
 </html>

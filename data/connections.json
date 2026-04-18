@@ -1,0 +1,1913 @@
+{
+  "card_001": {
+    "tableName": "top-left",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_009",
+      "card_002"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_002": {
+    "tableName": "top-left",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_001",
+      "card_003"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_003": {
+    "tableName": "top-left",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_002",
+      "card_004"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_004": {
+    "tableName": "top-left",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_003",
+      "card_005"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_005": {
+    "tableName": "top-left",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_004",
+      "card_006"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  },
+  "card_006": {
+    "tableName": "top-left",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_005",
+      "card_007"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_007": {
+    "tableName": "top-left",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_006",
+      "card_008"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_008": {
+    "tableName": "top-left",
+    "seatIndex": 7,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_007",
+      "card_009"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_009": {
+    "tableName": "top-left",
+    "seatIndex": 8,
+    "tableSeats": [
+      "card_001",
+      "card_002",
+      "card_003",
+      "card_004",
+      "card_005",
+      "card_006",
+      "card_007",
+      "card_008",
+      "card_009"
+    ],
+    "tableNeighbors": [
+      "card_008",
+      "card_001"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_010": {
+    "tableName": "top-center",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_019",
+      "card_011"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_011": {
+    "tableName": "top-center",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_010",
+      "card_012"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_012": {
+    "tableName": "top-center",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_011",
+      "card_013"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_013": {
+    "tableName": "top-center",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_012",
+      "card_014"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_014": {
+    "tableName": "top-center",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_013",
+      "card_015"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_015": {
+    "tableName": "top-center",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_014",
+      "card_016"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_016": {
+    "tableName": "top-center",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_015",
+      "card_017"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_017": {
+    "tableName": "top-center",
+    "seatIndex": 7,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_016",
+      "card_018"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_018": {
+    "tableName": "top-center",
+    "seatIndex": 8,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_017",
+      "card_019"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_019": {
+    "tableName": "top-center",
+    "seatIndex": 9,
+    "tableSeats": [
+      "card_010",
+      "card_011",
+      "card_012",
+      "card_013",
+      "card_014",
+      "card_015",
+      "card_016",
+      "card_017",
+      "card_018",
+      "card_019"
+    ],
+    "tableNeighbors": [
+      "card_018",
+      "card_010"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  },
+  "card_020": {
+    "tableName": "top-right",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_029",
+      "card_021"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_021": {
+    "tableName": "top-right",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_020",
+      "card_022"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_022": {
+    "tableName": "top-right",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_021",
+      "card_023"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  },
+  "card_023": {
+    "tableName": "top-right",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_022",
+      "card_024"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_024": {
+    "tableName": "top-right",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_023",
+      "card_025"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_025": {
+    "tableName": "top-right",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_024",
+      "card_026"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_026": {
+    "tableName": "top-right",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_025",
+      "card_027"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_027": {
+    "tableName": "top-right",
+    "seatIndex": 7,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_026",
+      "card_028"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_028": {
+    "tableName": "top-right",
+    "seatIndex": 8,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_027",
+      "card_029"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_029": {
+    "tableName": "top-right",
+    "seatIndex": 9,
+    "tableSeats": [
+      "card_020",
+      "card_021",
+      "card_022",
+      "card_023",
+      "card_024",
+      "card_025",
+      "card_026",
+      "card_027",
+      "card_028",
+      "card_029"
+    ],
+    "tableNeighbors": [
+      "card_028",
+      "card_020"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_030": {
+    "tableName": "middle",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_039",
+      "card_031"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_031": {
+    "tableName": "middle",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_030",
+      "card_032"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_032": {
+    "tableName": "middle",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_031",
+      "card_033"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_033": {
+    "tableName": "middle",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_032",
+      "card_034"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_034": {
+    "tableName": "middle",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_033",
+      "card_035"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_035": {
+    "tableName": "middle",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_034",
+      "card_036"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_036": {
+    "tableName": "middle",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_035",
+      "card_037"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_037": {
+    "tableName": "middle",
+    "seatIndex": 7,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_036",
+      "card_038"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_038": {
+    "tableName": "middle",
+    "seatIndex": 8,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_037",
+      "card_039"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_039": {
+    "tableName": "middle",
+    "seatIndex": 9,
+    "tableSeats": [
+      "card_030",
+      "card_031",
+      "card_032",
+      "card_033",
+      "card_034",
+      "card_035",
+      "card_036",
+      "card_037",
+      "card_038",
+      "card_039"
+    ],
+    "tableNeighbors": [
+      "card_038",
+      "card_030"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  },
+  "card_040": {
+    "tableName": "bottom-left",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_048",
+      "card_041"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_041": {
+    "tableName": "bottom-left",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_040",
+      "card_042"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_042": {
+    "tableName": "bottom-left",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_041",
+      "card_043"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_043": {
+    "tableName": "bottom-left",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_042",
+      "card_044"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_044": {
+    "tableName": "bottom-left",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_043",
+      "card_045"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_045": {
+    "tableName": "bottom-left",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_044",
+      "card_046"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_046": {
+    "tableName": "bottom-left",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_045",
+      "card_047"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_047": {
+    "tableName": "bottom-left",
+    "seatIndex": 7,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_046",
+      "card_048"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_048": {
+    "tableName": "bottom-left",
+    "seatIndex": 8,
+    "tableSeats": [
+      "card_040",
+      "card_041",
+      "card_042",
+      "card_043",
+      "card_044",
+      "card_045",
+      "card_046",
+      "card_047",
+      "card_048"
+    ],
+    "tableNeighbors": [
+      "card_047",
+      "card_040"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  },
+  "card_049": {
+    "tableName": "bottom-middle",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_055",
+      "card_050"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_050": {
+    "tableName": "bottom-middle",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_049",
+      "card_051"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_051": {
+    "tableName": "bottom-middle",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_050",
+      "card_052"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_052": {
+    "tableName": "bottom-middle",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_051",
+      "card_053"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_053": {
+    "tableName": "bottom-middle",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_052",
+      "card_054"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_054": {
+    "tableName": "bottom-middle",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_053",
+      "card_055"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  },
+  "card_055": {
+    "tableName": "bottom-middle",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_049",
+      "card_050",
+      "card_051",
+      "card_052",
+      "card_053",
+      "card_054",
+      "card_055"
+    ],
+    "tableNeighbors": [
+      "card_054",
+      "card_049"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_056": {
+    "tableName": "bottom-right",
+    "seatIndex": 0,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_065",
+      "card_057"
+    ],
+    "directionPairs": [
+      "card_002",
+      "card_011",
+      "card_026",
+      "card_034",
+      "card_045",
+      "card_058",
+      "card_061"
+    ]
+  },
+  "card_057": {
+    "tableName": "bottom-right",
+    "seatIndex": 1,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_056",
+      "card_058"
+    ],
+    "directionPairs": [
+      "card_001",
+      "card_010",
+      "card_025",
+      "card_029",
+      "card_036",
+      "card_046",
+      "card_055",
+      "card_063"
+    ]
+  },
+  "card_058": {
+    "tableName": "bottom-right",
+    "seatIndex": 2,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_057",
+      "card_059"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_059": {
+    "tableName": "bottom-right",
+    "seatIndex": 3,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_058",
+      "card_060"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_060": {
+    "tableName": "bottom-right",
+    "seatIndex": 4,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_059",
+      "card_061"
+    ],
+    "directionPairs": [
+      "card_003",
+      "card_018",
+      "card_024",
+      "card_033",
+      "card_047",
+      "card_053",
+      "card_064"
+    ]
+  },
+  "card_061": {
+    "tableName": "bottom-right",
+    "seatIndex": 5,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_060",
+      "card_062"
+    ],
+    "directionPairs": [
+      "card_004",
+      "card_006",
+      "card_016",
+      "card_017",
+      "card_020",
+      "card_023",
+      "card_035",
+      "card_040",
+      "card_042",
+      "card_050",
+      "card_056"
+    ]
+  },
+  "card_062": {
+    "tableName": "bottom-right",
+    "seatIndex": 6,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_061",
+      "card_063"
+    ],
+    "directionPairs": [
+      "card_005",
+      "card_019",
+      "card_022",
+      "card_039",
+      "card_048",
+      "card_054",
+      "card_065"
+    ]
+  },
+  "card_063": {
+    "tableName": "bottom-right",
+    "seatIndex": 7,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_062",
+      "card_064"
+    ],
+    "directionPairs": [
+      "card_007",
+      "card_015",
+      "card_021",
+      "card_030",
+      "card_031",
+      "card_041",
+      "card_052",
+      "card_057"
+    ]
+  },
+  "card_064": {
+    "tableName": "bottom-right",
+    "seatIndex": 8,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_063",
+      "card_065"
+    ],
+    "directionPairs": [
+      "card_009",
+      "card_014",
+      "card_028",
+      "card_032",
+      "card_043",
+      "card_049",
+      "card_059",
+      "card_060"
+    ]
+  },
+  "card_065": {
+    "tableName": "bottom-right",
+    "seatIndex": 9,
+    "tableSeats": [
+      "card_056",
+      "card_057",
+      "card_058",
+      "card_059",
+      "card_060",
+      "card_061",
+      "card_062",
+      "card_063",
+      "card_064",
+      "card_065"
+    ],
+    "tableNeighbors": [
+      "card_064",
+      "card_056"
+    ],
+    "directionPairs": [
+      "card_008",
+      "card_012",
+      "card_013",
+      "card_027",
+      "card_037",
+      "card_038",
+      "card_044",
+      "card_051",
+      "card_062"
+    ]
+  }
+}

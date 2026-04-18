@@ -1,110 +1,516 @@
 <!DOCTYPE html>
-<html lang="en" class="page">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#04040e">
-  <title>Map — Midnight Eclipse</title>
+  <title>Constellation Map — Midnight Eclipse</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #04040e;
+      margin: 0; padding: 0;
+    }
+
+    /* Full-bleed map canvas */
+    #map-stage {
+      position: fixed;
+      inset: 0;
+      cursor: grab;
+      touch-action: none;
+    }
+    #map-stage:active { cursor: grabbing; }
+
+    /* SVG fills the stage */
+    #constellation-svg {
+      width: 100%; height: 100%;
+      overflow: visible;
+    }
+
+    /* Node dots */
+    .node-dot {
+      cursor: pointer;
+      transition: r 0.3s, opacity 0.4s;
+    }
+    .node-dot circle.bg    { fill: transparent; }
+    .node-dot circle.core  {
+      fill: var(--node-color, #2a2a4a);
+      stroke: var(--node-color, #4a4a6a);
+      stroke-width: 1.5;
+      transition: fill 0.5s, filter 0.5s;
+      filter: brightness(0.4);
+    }
+    .node-dot.online circle.core {
+      fill: var(--node-color, var(--accent));
+      stroke: var(--node-color, var(--accent));
+      filter: brightness(1) drop-shadow(0 0 6px var(--node-color, var(--accent)));
+    }
+    .node-dot.polaris circle.core {
+      stroke: gold;
+      stroke-width: 2;
+    }
+    .node-dot.polaris.online circle.core {
+      filter: brightness(1) drop-shadow(0 0 10px gold);
+      animation: polaris-pulse 2s ease-in-out infinite;
+    }
+    @keyframes polaris-pulse {
+      0%,100% { filter: brightness(1) drop-shadow(0 0 8px gold); }
+      50%      { filter: brightness(1.3) drop-shadow(0 0 16px gold); }
+    }
+    .node-dot.is-me circle.core {
+      stroke: white; stroke-width: 2.5;
+    }
+
+    .node-label {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 10px;
+      fill: rgba(200,200,220,0.5);
+      text-anchor: middle;
+      pointer-events: none;
+      transition: fill 0.4s;
+      user-select: none;
+    }
+    .node-dot.online + .node-label { fill: rgba(255,255,255,0.85); }
+
+    /* Constellation label */
+    .const-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      fill: rgba(108,142,245,0.45);
+      text-anchor: middle;
+      pointer-events: none;
+      user-select: none;
+    }
+    /* Connector lines between table neighbors */
+    .conn-line {
+      stroke: rgba(108,142,245,0.08);
+      stroke-width: 1;
+      pointer-events: none;
+      transition: stroke-opacity 0.4s;
+    }
+    .conn-line.active {
+      stroke: rgba(108,142,245,0.35);
+      stroke-width: 1.5;
+    }
+
+    /* Bottom HUD */
+    .map-hud {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      background: rgba(4,4,14,0.85);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(108,142,245,0.15);
+      padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    }
+    .hud-nav { display: grid; grid-template-columns: repeat(6,1fr); width:100%; max-width:560px; }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 3px; padding: 6px 2px;
+      color: rgba(104,104,170,0.8);
+      font-size: 10px; text-decoration: none;
+      border-radius: 8px; transition: color 0.15s;
+    }
+    .nav-item .nav-icon { font-size: 18px; line-height: 1; }
+    .nav-item .nav-label { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.1em; }
+    .nav-item.is-active { color: #6c8ef5; }
+    .nav-item.is-active .nav-icon { text-shadow: 0 0 12px #6c8ef5; }
+
+    /* Online counter */
+    .online-counter {
+      position: fixed;
+      top: max(env(safe-area-inset-top), 14px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      background: rgba(4,4,14,0.8);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(108,142,245,0.25);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: rgba(200,200,220,0.8);
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .online-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: live-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes live-pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.4; transform:scale(1.3); }
+    }
+
+    /* Person info panel (slide up from bottom) */
+    .person-panel {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 50;
+      background: #0c0c1e;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      border-top: 1px solid rgba(108,142,245,0.3);
+      padding: 8px 22px calc(90px + env(safe-area-inset-bottom));
+      max-height: 65svh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .person-panel.open { transform: translateY(0); }
+    .panel-handle {
+      width: 36px; height: 4px;
+      border-radius: 2px;
+      background: rgba(108,142,245,0.3);
+      margin: 10px auto 16px;
+    }
+    .panel-name  { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .panel-meta  { font-family:'Space Mono',monospace; font-size: 10px; letter-spacing: 0.15em; color: rgba(104,104,170,0.8); margin-bottom: 14px; }
+    .panel-rows  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .panel-cell  { background: #141430; border: 1px solid rgba(108,142,245,0.15); border-radius: 8px; padding: 10px; }
+    .panel-cell-label { font-family:'Space Mono',monospace; font-size: 9px; letter-spacing:0.18em; color:rgba(104,104,170,0.8); margin-bottom: 3px; text-transform:uppercase; }
+    .panel-cell-val   { font-size: 13px; font-weight: 500; }
+    .panel-fav   { font-size: 13px; color: rgba(200,200,220,0.7); line-height: 1.5; margin-bottom: 14px; }
+    .panel-polaris { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+      border-radius:999px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.4);
+      color: gold; font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.15em; margin-bottom:10px; }
+    .panel-go-btn {
+      display: block; width: 100%; padding: 13px;
+      background: #141430; border: 1px solid rgba(108,142,245,0.35);
+      border-radius: 10px; color: #e8e8f5; font-size: 14px; font-weight: 500;
+      cursor: pointer; text-align: center; text-decoration: none;
+    }
+    .panel-close {
+      position: absolute; top: 18px; right: 18px;
+      background: rgba(108,142,245,0.1); border: none; color: #e8e8f5;
+      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+    }
+    .panel-online-badge {
+      display: inline-block; padding: 2px 10px; border-radius:999px;
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3);
+      color: #4ade80; font-size: 11px; font-family:'Space Mono',monospace;
+      letter-spacing:0.1em; margin-bottom: 10px;
+    }
+  </style>
 </head>
-<body class="page">
+<body>
   <div class="stars" id="stars"></div>
 
-  <main class="page-container">
-    <header class="page-header">
-      <div class="page-eyebrow">The Sky Tonight</div>
-      <h1 class="page-title">Constellation<br>Map</h1>
-      <p class="page-subtitle">Every node. Every bearing. The shape of CLAWS 2026.</p>
-    </header>
+  <!-- Online counter pill -->
+  <div class="online-counter">
+    <span class="online-dot"></span>
+    <span id="online-count">0 online</span>
+  </div>
 
-    <div class="section">
-      <div class="section-label">Legend</div>
-      <div class="map-legend" id="legend"></div>
-      <div class="section-body" style="margin-top:10px">
-        <p style="font-size:12.5px;color:var(--text-muted)">◉ = Polaris anchor · outlined tile = you · N/E/S/W = bearing</p>
-      </div>
-    </div>
+  <!-- Full-screen interactive map -->
+  <div id="map-stage">
+    <svg id="constellation-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
+      <g id="lines-layer"></g>
+      <g id="nodes-layer"></g>
+      <g id="labels-layer"></g>
+    </svg>
+  </div>
 
-    <div id="map-body"></div>
-  </main>
+  <!-- Person info panel -->
+  <div class="person-panel" id="person-panel">
+    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div class="panel-handle"></div>
+    <div id="panel-content"></div>
+  </div>
 
-  <nav class="bottom-nav" id="bottom-nav"></nav>
+  <!-- Bottom nav -->
+  <div class="map-hud">
+    <nav class="hud-nav" id="bottom-nav"></nav>
+  </div>
 
   <script src="js/config.js"></script>
   <script src="js/nav.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script>
   (async function () {
-    try {
-      const [cards, consts] = await Promise.all([
-        fetch('data/cards.json').then(r => r.json()),
-        fetch('data/constellations.json').then(r => r.json()),
-      ]);
+    // ── Load data ────────────────────────────────────────────────────
+    const [cards, consts, connections] = await Promise.all([
+      fetch('data/cards.json').then(r => r.json()),
+      fetch('data/constellations.json').then(r => r.json()),
+      fetch('data/connections.json').then(r => r.json()),
+    ]);
 
-      const myCardId = (() => {
-        try { return localStorage.getItem('me_card_id'); } catch { return null; }
-      })();
+    const byId = {};
+    cards.forEach(c => byId[c.id] = c);
+    const myId = (() => { try { return localStorage.getItem('me_card_id'); } catch { return null; } })();
 
-      // Legend
-      const legend = document.getElementById('legend');
-      Object.values(consts).forEach(c => {
-        const chip = document.createElement('span');
-        chip.className = 'legend-chip';
-        chip.innerHTML = `<span class="legend-dot" style="background:${c.color}"></span>${c.name} · ${c.fullName}`;
-        legend.appendChild(chip);
+    // ── Table layout — 7 clusters in room arrangement ────────────────
+    // viewBox is 1000 × 700; positions are cluster centres
+    const TABLE_LAYOUT = {
+      'top-left':     { cx: 160, cy: 155, label: 'Top Left'    },
+      'top-center':   { cx: 500, cy: 110, label: 'Top Center'  },
+      'top-right':    { cx: 840, cy: 155, label: 'Top Right'   },
+      'middle':       { cx: 500, cy: 360, label: 'Center'       },
+      'bottom-left':  { cx: 160, cy: 555, label: 'Bottom Left' },
+      'bottom-middle':{ cx: 500, cy: 590, label: 'Bottom Mid'  },
+      'bottom-right': { cx: 840, cy: 555, label: 'Bottom Right'},
+    };
+
+    // Group cards by table
+    const byTable = {};
+    cards.forEach(c => {
+      if (!byTable[c.table]) byTable[c.table] = [];
+      byTable[c.table].push(c);
+    });
+
+    // Assign (x,y) to each card based on table cluster + circular position
+    const nodePos = {};  // cardId → {x, y}
+
+    for (const [tableName, layout] of Object.entries(TABLE_LAYOUT)) {
+      const members = (byTable[tableName] || []);
+      const n = members.length;
+      const radius = n <= 7 ? 62 : 78;
+      const angleOffset = -Math.PI / 2;  // start at top
+
+      members.forEach((card, i) => {
+        const angle = angleOffset + (2 * Math.PI * i) / n;
+        nodePos[card.id] = {
+          x: layout.cx + radius * Math.cos(angle),
+          y: layout.cy + radius * Math.sin(angle),
+        };
       });
-
-      // Group cards by constellation
-      const byConst = {};
-      cards.forEach(card => {
-        if (!byConst[card.constellation]) byConst[card.constellation] = [];
-        byConst[card.constellation].push(card);
-      });
-
-      // Order constellations alphabetically but with BU first, XX last
-      const keys = Object.keys(byConst).sort();
-      keys.sort((a, b) => {
-        if (a === 'BU') return -1; if (b === 'BU') return 1;
-        if (a === 'XX') return 1;  if (b === 'XX') return -1;
-        return a.localeCompare(b);
-      });
-
-      const body = document.getElementById('map-body');
-      keys.forEach(key => {
-        const meta = consts[key] || { name: key, fullName: key, color: '#6c8ef5' };
-        const list = byConst[key].slice().sort((a, b) => (a.number || 0) - (b.number || 0));
-
-        const block = document.createElement('div');
-        block.className = 'constellation-block section';
-        block.innerHTML = `
-          <div class="constellation-head">
-            <span class="c-name" style="color:${meta.color}">◉ ${meta.name} — ${meta.fullName}</span>
-            <span class="c-count">${list.length} NODE${list.length === 1 ? '' : 'S'}</span>
-          </div>
-          <div class="node-grid"></div>`;
-
-        const grid = block.querySelector('.node-grid');
-        list.forEach(card => {
-          const node = document.createElement('div');
-          node.className = 'node' +
-            (card.isPolaris ? ' is-polaris' : '') +
-            (card.id === myCardId ? ' is-me' : '');
-          node.style.setProperty('--c-color', meta.color);
-          node.style.setProperty('--c-border', 'rgba(108,142,245,0.25)');
-          const subLabel = card.symbol && card.symbol !== key ? card.symbol : (card.direction || '');
-          node.innerHTML = `
-            <div class="n-num">${String(card.number || '').padStart(2,'0')}</div>
-            <div class="n-name">${card.name}</div>
-            <div class="n-dir">${subLabel}</div>`;
-          grid.appendChild(node);
-        });
-
-        body.appendChild(block);
-      });
-    } catch (e) {
-      document.getElementById('map-body').innerHTML =
-        '<div class="section"><div class="section-body">Could not load map data. Check back in a moment.</div></div>';
-      console.error(e);
     }
+
+    // ── Build SVG ────────────────────────────────────────────────────
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const linesLayer  = document.getElementById('lines-layer');
+    const nodesLayer  = document.getElementById('nodes-layer');
+    const labelsLayer = document.getElementById('labels-layer');
+
+    // Table constellation labels
+    for (const [tableName, layout] of Object.entries(TABLE_LAYOUT)) {
+      const t = document.createElementNS(svgNS, 'text');
+      t.setAttribute('x', layout.cx);
+      t.setAttribute('y', layout.cy + (tableName.includes('bottom') ? 14 : -14));
+      t.setAttribute('class', 'const-label');
+      t.textContent = layout.label.toUpperCase();
+      labelsLayer.appendChild(t);
+    }
+
+    // Draw neighbor connection lines
+    const drawnLines = new Set();
+    cards.forEach(card => {
+      const conn = connections[card.id] || {};
+      (conn.tableNeighbors || []).forEach(otherId => {
+        const key = [card.id, otherId].sort().join(':');
+        if (drawnLines.has(key)) return;
+        drawnLines.add(key);
+        const from = nodePos[card.id];
+        const to   = nodePos[otherId];
+        if (!from || !to) return;
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+        line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+        line.setAttribute('class', 'conn-line');
+        line.dataset.a = card.id;
+        line.dataset.b = otherId;
+        linesLayer.appendChild(line);
+      });
+    });
+
+    // Draw nodes
+    const nodeDots = {}; // cardId → SVG group element
+
+    cards.forEach(card => {
+      const pos = nodePos[card.id];
+      if (!pos) return;
+      const meta  = consts[card.constellation] || {};
+      const color = meta.color || '#6c8ef5';
+
+      const g = document.createElementNS(svgNS, 'g');
+      g.setAttribute('class', 'node-dot' + (card.leader ? ' polaris' : '') + (card.id === myId ? ' is-me' : ''));
+      g.style.setProperty('--node-color', color);
+      g.setAttribute('data-id', card.id);
+
+      // Invisible hit area
+      const bg = document.createElementNS(svgNS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y); bg.setAttribute('r', 18);
+      bg.setAttribute('class', 'bg');
+      g.appendChild(bg);
+
+      // Visible core
+      const core = document.createElementNS(svgNS, 'circle');
+      core.setAttribute('cx', pos.x); core.setAttribute('cy', pos.y); core.setAttribute('r', 7);
+      core.setAttribute('class', 'core');
+      g.appendChild(core);
+
+      g.addEventListener('click', () => openPanel(card.id));
+      nodesLayer.appendChild(g);
+      nodeDots[card.id] = g;
+
+      // Label
+      const lbl = document.createElementNS(svgNS, 'text');
+      lbl.setAttribute('x', pos.x);
+      lbl.setAttribute('y', pos.y + 19);
+      lbl.setAttribute('class', 'node-label');
+      lbl.textContent = card.name.split(' ')[0]; // first name only
+      labelsLayer.appendChild(lbl);
+      nodeDots[card.id]._label = lbl;
+    });
+
+    // ── Online state tracking ────────────────────────────────────────
+    const onlineIds = new Set();
+
+    function setOnline(cardId, online) {
+      const dot = nodeDots[cardId];
+      if (!dot) return;
+      if (online) {
+        dot.classList.add('online');
+        onlineIds.add(cardId);
+      } else {
+        dot.classList.remove('online');
+        onlineIds.delete(cardId);
+      }
+      // Update neighbor lines
+      const conn = connections[cardId] || {};
+      (conn.tableNeighbors || []).forEach(otherId => {
+        const key = [cardId, otherId].sort().join(':');
+        document.querySelectorAll(`.conn-line[data-a="${cardId}"][data-b="${otherId}"],
+                                   .conn-line[data-a="${otherId}"][data-b="${cardId}"]`).forEach(line => {
+          const bothOnline = onlineIds.has(cardId) && onlineIds.has(otherId);
+          line.classList.toggle('active', bothOnline);
+        });
+      });
+      updateCounter();
+    }
+
+    function updateCounter() {
+      const el = document.getElementById('online-count');
+      el.textContent = `${onlineIds.size} online`;
+    }
+
+    // ── Socket.io ────────────────────────────────────────────────────
+    try {
+      const cfg = window.MIDNIGHT_ECLIPSE_CONFIG || {};
+      const socket = io(cfg.BACKEND_URL || undefined, { transports: ['websocket','polling'] });
+
+      socket.on('connect', () => {
+        const myCard = byId[myId];
+        if (myCard) socket.emit('guest_join', { cardId: myCard.id, name: myCard.name });
+      });
+
+      socket.on('card_online',  ({ cardId }) => setOnline(cardId, true));
+      socket.on('card_offline', ({ cardId }) => setOnline(cardId, false));
+    } catch(e) {}
+
+    // ── Person panel ─────────────────────────────────────────────────
+    const panel   = document.getElementById('person-panel');
+    const pBody   = document.getElementById('panel-content');
+
+    window.openPanel = function(cardId) {
+      const card = byId[cardId];
+      if (!card) return;
+      const meta  = consts[card.constellation] || {};
+      const color = meta.color || '#6c8ef5';
+      const isOnline = onlineIds.has(cardId);
+      const isMe = cardId === myId;
+
+      pBody.innerHTML = `
+        ${isOnline ? `<div class="panel-online-badge">● ONLINE</div>` : ''}
+        ${card.leader ? `<div class="panel-polaris">◉ TABLE ANCHOR</div>` : ''}
+        <div class="panel-name">${card.name}</div>
+        <div class="panel-meta" style="color:${color}">
+          ${card.symbol || card.constellation} · ${meta.fullName || card.constellation} · Node ${String(card.number).padStart(2,'0')} · ${card.direction}
+        </div>
+        ${card.title ? `<div style="font-size:13px;color:rgba(200,200,220,0.6);margin-bottom:12px">${card.title}</div>` : ''}
+        ${card.oneWord || card.role ? `
+        <div class="panel-rows">
+          ${card.oneWord ? `<div class="panel-cell"><div class="panel-cell-label">Approach</div><div class="panel-cell-val">${card.oneWord}</div></div>` : ''}
+          ${card.role    ? `<div class="panel-cell"><div class="panel-cell-label">Role</div><div class="panel-cell-val">${card.role}</div></div>` : ''}
+          ${card.attitude ? `<div class="panel-cell"><div class="panel-cell-label">Energy</div><div class="panel-cell-val" style="font-size:12px">${card.attitude}</div></div>` : ''}
+          ${card.projectStyle ? `<div class="panel-cell"><div class="panel-cell-label">Style</div><div class="panel-cell-val" style="font-size:12px">${card.projectStyle}</div></div>` : ''}
+        </div>` : ''}
+        ${card.favoriteWork ? `<div class="panel-fav"><span style="color:rgba(104,104,170,0.8);font-size:11px;font-family:'Space Mono',monospace;letter-spacing:0.1em">BEST WORK </span><br>${card.favoriteWork}</div>` : ''}
+        ${isMe ? '' : `<a class="panel-go-btn" href="node.html?id=${myId}&scan=${cardId}">See your connection with ${card.name.split(' ')[0]} →</a>`}
+      `;
+
+      panel.classList.add('open');
+    };
+
+    window.closePanel = function() { panel.classList.remove('open'); };
+    panel.addEventListener('click', e => { if (e.target === panel) closePanel(); });
+
+    // ── Pan / pinch-zoom ─────────────────────────────────────────────
+    const stage = document.getElementById('map-stage');
+    const svg   = document.getElementById('constellation-svg');
+
+    let vb = { x: 0, y: 0, w: 1000, h: 700 };
+    let drag = null;
+
+    function applyVB() {
+      svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    }
+
+    stage.addEventListener('pointerdown', e => {
+      if (e.target.closest('.node-dot')) return;
+      stage.setPointerCapture(e.pointerId);
+      drag = { x: e.clientX, y: e.clientY, vbx: vb.x, vby: vb.y };
+    });
+    stage.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const scaleX = vb.w / stage.clientWidth;
+      const scaleY = vb.h / stage.clientHeight;
+      vb.x = drag.vbx - (e.clientX - drag.x) * scaleX;
+      vb.y = drag.vby - (e.clientY - drag.y) * scaleY;
+      applyVB();
+    });
+    stage.addEventListener('pointerup', () => { drag = null; });
+
+    stage.addEventListener('wheel', e => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.1 : 0.9;
+      const rect = stage.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / rect.width;
+      const my = (e.clientY - rect.top) / rect.height;
+      const cx = vb.x + vb.w * mx;
+      const cy = vb.y + vb.h * my;
+      vb.w *= factor; vb.h *= factor;
+      vb.x = cx - vb.w * mx;
+      vb.y = cy - vb.h * my;
+      applyVB();
+    }, { passive: false });
+
+    // Pinch-to-zoom
+    let lastDist = null;
+    stage.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) lastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+    });
+    stage.addEventListener('touchmove', e => {
+      if (e.touches.length !== 2 || !lastDist) return;
+      e.preventDefault();
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+      const factor = lastDist / dist;
+      const cx = (vb.x*2 + vb.w) / 2;
+      const cy = (vb.y*2 + vb.h) / 2;
+      vb.w *= factor; vb.h *= factor;
+      vb.x = cx - vb.w / 2;
+      vb.y = cy - vb.h / 2;
+      lastDist = dist;
+      applyVB();
+    }, { passive: false });
   })();
   </script>
 </body>
