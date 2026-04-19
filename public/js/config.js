@@ -9,7 +9,7 @@
     host.endsWith('.pages.dev');
 
   window.MIDNIGHT_ECLIPSE_CONFIG = {
-    // Override this with your Railway URL before deploying to Vercel.
+    // Replace this with your actual Railway URL after deploying.
     BACKEND_URL: isStaticHost
       ? 'https://claws-formal-production.up.railway.app'
       : '',
